@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { shortcuts } from '$lib/services/shortcuts.service.svelte';
+
   let {
     totalCount,
     assignedCount,
@@ -37,6 +39,7 @@
       type="button"
       class="stat-badge success"
       class:active={activeFilter === 'assigned'}
+      use:shortcuts.rovingFocus
       onclick={() => onfilter('assigned')}
       title={activeFilter === 'assigned' ? 'Mostrar todos' : 'Filtrar asignados'}
     >
@@ -47,20 +50,21 @@
       type="button"
       class="stat-badge info"
       class:active={activeFilter === 'free'}
+      use:shortcuts.rovingFocus
       onclick={() => onfilter('free')}
       title={activeFilter === 'free' ? 'Mostrar todos' : 'Filtrar libres'}
     >
       <span class="stat-label">Libres</span>
       <span class="stat-value">{freeCount}</span>
     </button>
-    <button class="btn-secondary manage-btn" onclick={onhistorial}>
+    <button class="btn-secondary manage-btn" use:shortcuts.rovingFocus onclick={onhistorial}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
       Historial
     </button>
-    <button class="btn-secondary manage-btn" onclick={onfuncionarios}>
+    <button class="btn-secondary manage-btn" use:shortcuts.rovingFocus onclick={onfuncionarios}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>

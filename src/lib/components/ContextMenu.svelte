@@ -33,6 +33,32 @@
     window.addEventListener('keydown', onKey);
     return () => window.removeEventListener('keydown', onKey);
   });
+
+  // Focus the first item when the menu opens
+  $effect(() => {
+    if (!contextMenu.isOpen) return;
+    const items = menuEl?.querySelectorAll<HTMLButtonElement>('.cm-item:not(.disabled)');
+    items?.[0]?.focus();
+  });
+
+  function handleMenuKeydown(e: KeyboardEvent) {
+    const items = Array.from(
+      menuEl?.querySelectorAll<HTMLButtonElement>('.cm-item:not(.disabled)') ?? [],
+    );
+    if (items.length === 0) return;
+    const idx = Math.max(
+      0,
+      items.indexOf(document.activeElement as HTMLButtonElement),
+    );
+    if (e.key === 'ArrowDown' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      const delta = e.key === 'ArrowDown' ? 1 : -1;
+      items[(idx + delta + items.length) % items.length].focus();
+    } else if (e.key === 'Home' || e.key === 'End') {
+      e.preventDefault();
+      (e.key === 'Home' ? items[0] : items[items.length - 1]).focus();
+    }
+  }
 </script>
 
 {#if contextMenu.isOpen}
@@ -42,6 +68,7 @@
     style={`left: ${stylePos.left}px; top: ${stylePos.top}px;`}
     role="menu"
     tabindex="-1"
+    onkeydown={handleMenuKeydown}
     oncontextmenu={(e) => e.preventDefault()}
   >
     {#each contextMenu.items as item (item)}

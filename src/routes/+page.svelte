@@ -6,12 +6,28 @@
   import HistorialModal from '$lib/components/HistorialModal.svelte';
   import HandyAssignModal from '$lib/components/HandyAssignModal.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
+  import { shortcuts } from '$lib/services/shortcuts.service.svelte';
 
   let filterInput = $state('');
   let activeFilter = $state<'all' | 'assigned' | 'free'>('all');
   let showFuncionariosModal = $state(false);
   let showHistorialModal = $state(false);
   let assignHandyId = $state<number | null>(null);
+
+  // Expose app actions to the global keyboard shortcuts service
+  $effect(() => {
+    const unregister = shortcuts.setAppActions({
+      openAdmin: () => (showFuncionariosModal = true),
+      openHistory: () => (showHistorialModal = true),
+      quickSelect: (id) => {
+        assignHandyId = id;
+      },
+      resetView: () => {
+        filterInput = '';
+      },
+    });
+    return unregister;
+  });
 
   // Derived properties
   const assignHandy = $derived(assignHandyId !== null ? handyDB.handies.find(h => h.id === assignHandyId) ?? null : null);
@@ -98,6 +114,15 @@
     onpin={(id) => handyDB.toggleFixed(id)}
     oncontextmenu={handleHandyContextMenu}
   />
+
+  <footer class="shortcut-hints">
+    <span class="hint"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
+    <span class="hint"><kbd>Enter</kbd> Aceptar</span>
+    <span class="hint"><kbd>Esc</kbd>/<kbd>Supr</kbd> Salir / Volver</span>
+    <span class="hint"><kbd>1</kbd>-<kbd>0</kbd> / <kbd>Ctrl</kbd>+<kbd>1</kbd>-<kbd>0</kbd> Handy 1-20</span>
+    <span class="hint"><kbd>Ctrl</kbd>+<kbd>O</kbd> Administración</span>
+    <span class="hint"><kbd>Ctrl</kbd>+<kbd>H</kbd> Historial</span>
+  </footer>
 </div>
 
 {#if assignHandyId !== null}
@@ -123,6 +148,42 @@
     min-height: 100vh;
   }
 
+  .shortcut-hints {
+    margin-top: auto;
+    padding-top: 24px;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    gap: 6px 20px;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+  }
+
+  .hint {
+    display: inline-flex;
+    align-items: center;
+    gap: 3px;
+    white-space: nowrap;
+  }
+
+  .hint kbd {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 18px;
+    height: 18px;
+    padding: 0 4px;
+    border-radius: 4px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    border-bottom-width: 2px;
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    line-height: 1;
+  }
+
   @media (max-width: 1024px) {
     .dashboard-container {
       padding: 24px 16px;
@@ -132,6 +193,11 @@
   @media (max-width: 480px) {
     .dashboard-container {
       padding: 14px 10px;
+    }
+
+    .shortcut-hints {
+      font-size: 0.68rem;
+      gap: 4px 14px;
     }
   }
 </style>

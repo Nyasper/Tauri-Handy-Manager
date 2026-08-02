@@ -31,7 +31,7 @@
 </script>
 
 {#if modalService.state}
-  <AppModal title={modalService.state.title} onclose={cancel} maxWidth="420px">
+  <AppModal title={modalService.state.title} onclose={cancel} onconfirm={handleConfirm} maxWidth="420px">
     <div class="modal-body">
       <p class="modal-message">{modalService.state.message}</p>
 

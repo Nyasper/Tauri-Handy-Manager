@@ -1,24 +1,31 @@
 <script lang="ts">
   import type { Snippet } from 'svelte';
+  import { shortcuts } from '$lib/services/shortcuts.service.svelte';
 
   let {
     title,
     onclose,
+    onconfirm,
     maxWidth = '560px',
     children,
   }: {
     title: string;
     onclose: () => void;
+    onconfirm?: () => void;
     maxWidth?: string;
     children: Snippet;
   } = $props();
 
+  let panelEl = $state<HTMLElement | null>(null);
+
+  // Register this modal as the active dismiss/confirm layer for keyboard shortcuts
   $effect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') onclose();
-    };
-    window.addEventListener('keydown', onKey);
-    return () => window.removeEventListener('keydown', onKey);
+    const unregister = shortcuts.pushModal({
+      dismiss: onclose,
+      confirm: onconfirm,
+      scope: panelEl,
+    });
+    return unregister;
   });
 </script>
 
@@ -27,7 +34,7 @@
   role="presentation"
   onclick={(e) => e.target === e.currentTarget && onclose()}
 >
-  <div class="modal-panel glass-panel" style={`max-width: ${maxWidth}`}>
+  <div class="modal-panel glass-panel" style={`max-width: ${maxWidth}`} bind:this={panelEl}>
     <div class="modal-header">
       <h3>{title}</h3>
       <button class="close-btn" onclick={onclose} title="Cerrar">

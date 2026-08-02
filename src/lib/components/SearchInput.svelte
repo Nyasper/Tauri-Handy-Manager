@@ -1,4 +1,6 @@
 <script lang="ts">
+  import { shortcuts } from '$lib/services/shortcuts.service.svelte';
+
   let {
     value = $bindable(''),
     placeholder = 'Buscar...',
@@ -17,7 +19,7 @@
     <circle cx="11" cy="11" r="8"></circle>
     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
   </svg>
-  <input {id} type="text" bind:value {placeholder} autocomplete="off" />
+  <input {id} type="text" bind:value {placeholder} autocomplete="off" use:shortcuts.rovingFocus />
 </div>
 
 <style>
