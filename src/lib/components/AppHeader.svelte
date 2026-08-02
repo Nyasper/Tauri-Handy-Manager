@@ -6,6 +6,7 @@
     activeFilter,
     onfilter,
     onfuncionarios,
+    onhistorial,
   }: {
     totalCount: number;
     assignedCount: number;
@@ -13,6 +14,7 @@
     activeFilter: 'all' | 'assigned' | 'free';
     onfilter: (filter: 'assigned' | 'free') => void;
     onfuncionarios: () => void;
+    onhistorial: () => void;
   } = $props();
 </script>
 
@@ -51,6 +53,13 @@
       <span class="stat-label">Libres</span>
       <span class="stat-value">{freeCount}</span>
     </button>
+    <button class="btn-secondary manage-btn" onclick={onhistorial}>
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+        <circle cx="12" cy="12" r="10"></circle>
+        <polyline points="12 6 12 12 16 14"></polyline>
+      </svg>
+      Historial
+    </button>
     <button class="btn-secondary manage-btn" onclick={onfuncionarios}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
@@ -58,7 +67,7 @@
         <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
-      Funcionarios
+      Administración
     </button>
   </div>
 </header>

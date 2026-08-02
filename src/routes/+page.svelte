@@ -1,14 +1,16 @@
 <script lang="ts">
-  import { handyDB, type Handy } from '$lib/db.svelte';
+  import { handyDB, type Handy } from '$lib\/services/db.service.svelte';
   import AppHeader from '$lib/components/AppHeader.svelte';
   import HandiesGrid from '$lib/components/HandiesGrid.svelte';
   import FuncionariosModal from '$lib/components/FuncionariosModal.svelte';
+  import HistorialModal from '$lib/components/HistorialModal.svelte';
   import HandyAssignModal from '$lib/components/HandyAssignModal.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
 
   let filterInput = $state('');
   let activeFilter = $state<'all' | 'assigned' | 'free'>('all');
   let showFuncionariosModal = $state(false);
+  let showHistorialModal = $state(false);
   let assignHandyId = $state<number | null>(null);
 
   // Derived properties
@@ -84,6 +86,7 @@
     {activeFilter}
     onfilter={toggleFilter}
     onfuncionarios={() => (showFuncionariosModal = true)}
+    onhistorial={() => (showHistorialModal = true)}
   />
 
   <HandiesGrid
@@ -103,6 +106,10 @@
 
 {#if showFuncionariosModal}
   <FuncionariosModal onclose={() => (showFuncionariosModal = false)} />
+{/if}
+
+{#if showHistorialModal}
+  <HistorialModal onclose={() => (showHistorialModal = false)} />
 {/if}
 
 <style>

@@ -3,7 +3,7 @@
   import Alert from './Alert.svelte';
   import SearchInput from './SearchInput.svelte';
   import AddOption from './AddOption.svelte';
-  import { handyDB, type Handy } from '$lib/db.svelte';
+  import { handyDB, type Handy } from '$lib\/services/db.service.svelte';
 
   let {
     handy,
@@ -151,7 +151,7 @@
 
             {#if canAddNew}
               <AddOption
-                label="Agregar owner:"
+                label="Agregar funcionario:"
                 text={searchInput.trim()}
                 onclick={addNewOwner}
               />
@@ -159,7 +159,7 @@
           </div>
 
           <span class="helper-text">
-            Selecciona una persona de la lista o escribe un nombre nuevo para crearla. El área se asigna desde "Funcionarios".
+            Selecciona una persona de la lista o escribe un nombre nuevo para crearla. El área se asigna desde "Administración".
           </span>
         </div>
 

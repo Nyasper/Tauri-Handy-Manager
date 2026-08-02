@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { handyDB, type Owner } from '$lib/db.svelte';
+  import { handyDB, type Owner } from '$lib\/services/db.service.svelte';
   import AppModal from './AppModal.svelte';
   import Alert from './Alert.svelte';
   import SearchInput from './SearchInput.svelte';
@@ -259,7 +259,7 @@
         class:active={activeTab === 'funcionarios'}
         onclick={() => setActiveTab('funcionarios')}
       >
-        Funcionarios
+        Administración
       </button>
       <button
         class="tab-btn"

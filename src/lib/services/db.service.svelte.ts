@@ -22,6 +22,17 @@ export interface Handy {
   fixed: boolean;
 }
 
+export type HistoryAction = 'assign' | 'unassign';
+
+export interface HistoryEntry {
+  id: number;
+  handy_id: number;
+  action: HistoryAction;
+  owner_id: number | null;
+  owner_name: string;
+  timestamp: string;
+}
+
 class HandyDB {
   private db: Database | null = null;
 
@@ -33,6 +44,9 @@ class HandyDB {
 
   // Available areas
   areas = $state<Area[]>([]);
+
+  // Link/unlink history (newest first)
+  history = $state<HistoryEntry[]>([]);
 
   // Map owner_id -> handy id for quick lookup
   handyByOwner = $derived(
@@ -56,8 +70,8 @@ class HandyDB {
     try {
       this.loading = true;
       this.error = null;
-      // Load database. This applies migrations automatically if registered in Rust
       this.db = await Database.load("sqlite:handy_manager.db");
+      await this.ensureSchema();
       await this.refresh();
     } catch (e: any) {
       console.error("Error al inicializar la base de datos:", e);
@@ -67,10 +81,42 @@ class HandyDB {
     }
   }
 
+  private async ensureSchema() {
+    if (!this.db) return;
+    await this.db.execute(
+      "CREATE TABLE IF NOT EXISTS areas (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE)",
+    );
+    await this.db.execute(
+      "CREATE TABLE IF NOT EXISTS owners (id INTEGER PRIMARY KEY AUTOINCREMENT, name TEXT NOT NULL UNIQUE, area_id INTEGER NOT NULL REFERENCES areas(id))",
+    );
+    await this.db.execute(
+      "CREATE TABLE IF NOT EXISTS handies (id INTEGER PRIMARY KEY, owner_id INTEGER REFERENCES owners(id), fixed INTEGER NOT NULL DEFAULT 0)",
+    );
+    await this.db.execute(
+      "CREATE TABLE IF NOT EXISTS handy_history (id INTEGER PRIMARY KEY AUTOINCREMENT, handy_id INTEGER NOT NULL, action TEXT NOT NULL, owner_id INTEGER, owner_name TEXT NOT NULL, timestamp TEXT NOT NULL)",
+    );
+    await this.db.execute(
+      "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)",
+    );
+    for (const name of [
+      'Gerencia / Gobernancia',
+      'Seguridad',
+      'Recepción',
+      'Cadete / Garajista',
+      'Mantenimiento',
+      'Mucama',
+      'Vidriero',
+      'Playero',
+      'Otro',
+    ]) {
+      await this.db.execute("INSERT OR IGNORE INTO areas (name) VALUES (?)", [name]);
+    }
+  }
+
   async refresh() {
     if (!this.db) return;
     try {
-      const [handies, owners, areas] = await Promise.all([
+      const [handies, owners, areas, history] = await Promise.all([
         this.db.select<Handy[]>(
           `SELECT h.id, h.fixed, h.owner_id, o.name AS owner_name, o.area_id, a.name AS area_name
            FROM handies h
@@ -85,10 +131,14 @@ class HandyDB {
            ORDER BY o.name COLLATE NOCASE ASC`,
         ),
         this.db.select<Area[]>("SELECT id, name FROM areas ORDER BY id ASC"),
+        this.db.select<HistoryEntry[]>(
+          "SELECT id, handy_id, action, owner_id, owner_name, timestamp FROM handy_history ORDER BY timestamp DESC, id DESC",
+        ),
       ]);
       this.handies = handies.map((h) => ({ ...h, fixed: !!h.fixed }));
       this.owners = owners;
       this.areas = areas;
+      this.history = history;
     } catch (e: any) {
       console.error("Error al recargar base de datos:", e);
       this.error = e.message || "Error al cargar los datos";
@@ -167,7 +217,12 @@ class HandyDB {
   /** Delete an owner, freeing any assigned handy first. */
   async deleteOwner(id: number) {
     if (!this.db) throw new Error("La base de datos no está inicializada");
+    const owner = this.owners.find((o) => o.id === id);
+    const freed = this.handies.filter((h) => h.owner_id === id);
     await this.db.execute("UPDATE handies SET owner_id = NULL WHERE owner_id = ?", [id]);
+    for (const handy of freed) {
+      await this.recordHistory('unassign', handy.id, id, owner?.name ?? 'Desconocido');
+    }
     await this.db.execute("DELETE FROM owners WHERE id = ?", [id]);
     await this.refresh();
   }
@@ -225,6 +280,20 @@ class HandyDB {
     await this.refresh();
   }
 
+  /** Persist a link/unlink event to the history table. */
+  private async recordHistory(
+    action: HistoryAction,
+    handyId: number,
+    ownerId: number | null,
+    ownerName: string,
+  ) {
+    if (!this.db) return;
+    await this.db.execute(
+      "INSERT INTO handy_history (handy_id, action, owner_id, owner_name, timestamp) VALUES (?, ?, ?, ?, ?)",
+      [handyId, action, ownerId, ownerName, new Date().toISOString()],
+    );
+  }
+
   /** Assign a handy to an existing owner. */
   async assignToOwner(id: number, ownerId: number) {
     if (!this.db) throw new Error("La base de datos no está inicializada");
@@ -240,10 +309,28 @@ class HandyDB {
       );
     }
 
+    const handy = this.handies.find((h) => h.id === id);
+    const newOwner = this.owners.find((o) => o.id === ownerId);
+    if (!newOwner) throw new Error("El funcionario seleccionado no existe");
+
     await this.db.execute("UPDATE handies SET owner_id = ? WHERE id = ?", [
       ownerId,
       id,
     ]);
+    if (handy?.owner_id != null && handy.owner_id !== ownerId) {
+      await this.recordHistory(
+        'unassign',
+        id,
+        handy.owner_id,
+        handy.owner_name ?? 'Desconocido',
+      );
+    }
+    await this.recordHistory(
+      'assign',
+      id,
+      ownerId,
+      newOwner.name,
+    );
     await this.refresh();
   }
 
@@ -264,9 +351,18 @@ class HandyDB {
       throw new Error("La base de datos no está inicializada");
     }
     try {
+      const handy = this.handies.find((h) => h.id === id);
       await this.db.execute("UPDATE handies SET owner_id = NULL, fixed = 0 WHERE id = ?", [
         id,
       ]);
+      if (handy?.owner_id != null) {
+        await this.recordHistory(
+          'unassign',
+          id,
+          handy.owner_id,
+          handy.owner_name ?? 'Desconocido',
+        );
+      }
       await this.refresh();
     } catch (e: any) {
       console.error(`Error al desvincular handy #${id}:`, e);
@@ -314,6 +410,113 @@ class HandyDB {
     await this.db.execute("DELETE FROM handies WHERE id = ?", [id]);
     await this.refresh();
   }
+
+  /** Read a setting value by key, or null if it doesn't exist. */
+  async getSetting(key: string): Promise<string | null> {
+    if (!this.db) return null;
+    const rows = await this.db.select<{ value: string }[]>(
+      "SELECT value FROM settings WHERE key = ?",
+      [key],
+    );
+    return rows[0]?.value ?? null;
+  }
+
+  /** Upsert a setting value. */
+  async setSetting(key: string, value: string) {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    await this.db.execute(
+      "INSERT INTO settings (key, value) VALUES (?, ?) ON CONFLICT(key) DO UPDATE SET value = excluded.value",
+      [key, value],
+    );
+  }
+
+  /** Get the configured security password, or null if not set. */
+  async getSecurityPassword(): Promise<string | null> {
+    return this.getSetting('security_password');
+  }
+
+  /** Set or change the security password. */
+  async setSecurityPassword(password: string) {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    await this.setSetting('security_password', password);
+  }
+
+  /** Delete the n most recent history entries (newest first). */
+  async deleteRecentHistory(n: number) {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    const rows = await this.db.select<{ id: number }[]>(
+      "SELECT id FROM handy_history ORDER BY timestamp DESC, id DESC LIMIT ?",
+      [n],
+    );
+    await this.deleteHistoryByIds(rows.map((r) => r.id));
+  }
+
+  /** Delete the n oldest history entries (oldest first). */
+  async deleteOldestHistory(n: number) {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    const rows = await this.db.select<{ id: number }[]>(
+      "SELECT id FROM handy_history ORDER BY timestamp ASC, id ASC LIMIT ?",
+      [n],
+    );
+    await this.deleteHistoryByIds(rows.map((r) => r.id));
+  }
+
+  /** Delete all history entries. */
+  async clearHistory() {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    await this.db.execute("DELETE FROM handy_history");
+    await this.refresh();
+  }
+
+  /** Delete the given history entry ids. */
+  private async deleteHistoryByIds(ids: number[]) {
+    if (!this.db) return;
+    if (ids.length === 0) {
+      await this.refresh();
+      return;
+    }
+    const placeholders = ids.map(() => '?').join(', ');
+    await this.db.execute(
+      `DELETE FROM handy_history WHERE id IN (${placeholders})`,
+      ids,
+    );
+    await this.refresh();
+  }
+}
+
+function csvEscape(value: string): string {
+  if (/[",\n\r]/.test(value)) {
+    return `"${value.replace(/"/g, '""')}"`;
+  }
+  return value;
+}
+
+/** Build a CSV string (comma-separated, UTF-8 BOM) from history entries. */
+export function historyToCsv(entries: HistoryEntry[]): string {
+  const header = ['Handy #', 'Acción', 'Funcionario', 'Fecha', 'Hora'];
+  const rows = entries.map((entry) => {
+    const date = new Date(entry.timestamp);
+    const fecha = Number.isNaN(date.getTime())
+      ? ''
+      : date.toLocaleDateString('es-UY', {
+          day: '2-digit',
+          month: '2-digit',
+          year: 'numeric',
+        });
+    const hora = Number.isNaN(date.getTime())
+      ? ''
+      : date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
+    return [
+      String(entry.handy_id),
+      entry.action === 'assign' ? 'Vinculado' : 'Desvinculado',
+      entry.owner_name,
+      fecha,
+      hora,
+    ]
+      .map(csvEscape)
+      .join(',');
+  });
+  return '\uFEFF' + [header.join(','), ...rows].join('\r\n');
 }
 
 export const handyDB = new HandyDB();

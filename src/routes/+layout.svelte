@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { handyDB } from '$lib/db.svelte';
+  import { handyDB } from '$lib\/services/db.service.svelte';
   import ContextMenu from '$lib/components/ContextMenu.svelte';
   import ModalHost from '$lib/components/ModalHost.svelte';
   import '../app.css';

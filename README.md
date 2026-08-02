@@ -1,6 +1,6 @@
 # Handy Manager
 
-Aplicación de escritorio para administrar y asignar handies (radios portátiles) entre los funcionarios de un edificio. Construida con **Tauri 2**, **SvelteKit / Svelte 5** y **TypeScript**, con persistencia en **SQLite** a través del plugin `@tauri-apps/plugin-sql`.
+Aplicación de escritorio sencilla para administrar y asignar handies (radios portátiles) entre los funcionarios de un edificio. Construida con **Tauri 2** y **Svelte 5** con persistencia en **SQLite** a través del plugin `@tauri-apps/plugin-sql`.
 
 ## Funcionalidades
 
@@ -13,6 +13,7 @@ Aplicación de escritorio para administrar y asignar handies (radios portátiles
 - **Gestión de funcionarios**: alta, renombrado, cambio de área y baja (al eliminar, sus handies quedan libres).
 - **Gestión de áreas**: alta, renombrado y baja con reasignación automática de sus funcionarios a otra área.
 - **Gestión de handies**: crear o eliminar handies dinámicamente (solo si están libres y no es el último).
+- **Historial**: registra automáticamente la fecha/hora en que cada handy se vincula o desvincula de un funcionario (incluye reasignaciones y liberación por baja de funcionario). Accesible desde el botón **Historial** del encabezado, con búsqueda y filtros por acción. Permite **exportar** lo que se ve a un archivo `.csv` (compatible con Excel y Google Sheets) y **eliminar** el historial (recientes, antiguas o todo) con confirmación y contraseña de seguridad configurable.
 - **Menú contextual** en las tarjetas con acciones rápidas (asignar, revocar, reasignar, fijar).
 - **Diálogos propios** (confirmar / alerta / prompt) reemplazando los nativos del navegador.
 
@@ -83,10 +84,9 @@ handy-manager/
 │   │   ├── +layout.ts          # Desactiva SSR (modo SPA)
 │   │   └── +page.svelte        # Vista principal: filtros, secciones Fijados/Otros
 │   └── lib/
-│       ├── db.svelte.ts        # Capa de datos: HandyDB, tipos y estado reactivo (runes)
 │       ├── app.css             # Tokens de diseño y estilos globales
 │       ├── components/         # Componentes UI (Header, Grid, Card, Modales, etc.)
-│       └── services/           # Servicios reactivos (modales y menú contextual)
+│       └── services/           # Servicios reactivos (db, modales y menú contextual)
 └── src-tauri/                  # Backend Rust (Tauri)
     ├── src/lib.rs              # Registro de migraciones SQL y arranque de Tauri
     ├── tauri.conf.json         # Configuración de la app
@@ -127,9 +127,23 @@ handies(
   owner_id INTEGER REFERENCES owners(id),
   fixed INTEGER NOT NULL DEFAULT 0
 );
+
+handy_history(
+  id INTEGER PRIMARY KEY AUTOINCREMENT,
+  handy_id INTEGER NOT NULL,
+  action TEXT NOT NULL,           -- 'assign' | 'unassign'
+  owner_id INTEGER,
+  owner_name TEXT NOT NULL,       -- snapshot del nombre al momento del evento
+  timestamp TEXT NOT NULL         -- fecha/hora en formato ISO 8601
+);
+
+settings(
+  key TEXT PRIMARY KEY,
+  value TEXT
+);                              -- ej. security_password
 ```
 
-### Capa de datos (`src/lib/db.svelte.ts`)
+### Capa de datos (`src/lib/services/db.service.svelte.ts`)
 
 `HandyDB` es una clase singleton exportada como `handyDB` que expone estado reactivo (`$state`) — `handies`, `owners`, `areas`, `loading`, `error` — y los métodos de operación: `assign`, `assignToOwner`, `unassign`, `updateAssignee`, `createOwner`, `updateOwner`, `updateOwnerArea`, `deleteOwner`, `createArea`, `updateArea`, `deleteArea`, `toggleFixed`, `createHandy`, `deleteHandy`, `refresh`. Todos refrescan la UI automáticamente tras cada operación.
 
