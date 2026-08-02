@@ -110,6 +110,8 @@
     display: flex;
     gap: 16px;
     align-items: center;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .manage-btn {

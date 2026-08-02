@@ -408,7 +408,8 @@
     display: flex;
     gap: 8px;
     align-items: center;
-    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .option-controls input {

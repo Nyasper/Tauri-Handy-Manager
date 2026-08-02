@@ -200,7 +200,8 @@
   .history-stats {
     display: flex;
     gap: 8px;
-    flex-shrink: 0;
+    flex-wrap: wrap;
+    justify-content: flex-end;
   }
 
   .stat-chip {
