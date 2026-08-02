@@ -75,6 +75,12 @@ jobs:
           path: dist
           pattern: handy-manager-*
 
+      - name: Delete existing release (if any)
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release delete "${{ github.ref_name }}" --yes || true
+
       - name: Create GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -82,4 +88,4 @@ jobs:
           gh release create "${{ github.ref_name }}" \
             --title "handy-manager ${{ github.ref_name }}" \
             --notes "Binarios generados automáticamente: instalador NSIS, .exe portable y AppImage." \
-            dist/*/*
+            $(find dist -type f)
