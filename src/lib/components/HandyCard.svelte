@@ -15,12 +15,6 @@
     onpin: () => void;
     oncontextmenu: (e: MouseEvent) => void;
   } = $props();
-
-  const shortcutLabel = $derived(() => {
-    const base = handy.id % 10 === 0 ? 0 : handy.id % 10;
-    const keyLabel = base === 0 ? '0' : String(base);
-    return handy.id <= 10 ? keyLabel : `Ctrl+${keyLabel}`;
-  });
 </script>
 
 <div
@@ -60,8 +54,6 @@
   <div class="handy-badge">
     <span class="handy-number">{handy.id}</span>
   </div>
-
-  <span class="kbd-chip" title="Atajo de teclado">{shortcutLabel}</span>
 
   <div class="handy-info">
     <span class="handy-title">Handy {handy.id}</span>
@@ -225,24 +217,6 @@
     height: 6px;
     border-radius: 50%;
     background: var(--text-muted);
-  }
-
-  .kbd-chip {
-    position: absolute;
-    bottom: 8px;
-    right: 8px;
-    padding: 2px 7px;
-    border-radius: 6px;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
-    color: var(--text-muted);
-    font-family: var(--font-body);
-    font-size: 0.62rem;
-    font-weight: 600;
-    letter-spacing: 0.04em;
-    line-height: 1.3;
-    pointer-events: none;
-    user-select: none;
   }
 
   .handy-card.assigned .indicator-dot {
