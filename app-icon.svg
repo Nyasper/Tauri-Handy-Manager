@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#15223e"/>
+      <stop offset="1" stop-color="#0a0e1a"/>
+    </linearGradient>
+    <linearGradient id="wifi" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="1" stop-color="#93c5fd"/>
+    </linearGradient>
+  </defs>
+
+  <rect width="1024" height="1024" rx="220" fill="url(#bg)"/>
+
+  <g fill="none" stroke="url(#wifi)" stroke-width="56" stroke-linecap="round">
+    <path d="M512 788l.01 0"/>
+    <path d="M382 610a184 184 0 0 1 260 0"/>
+    <path d="M272 498a344 344 0 0 1 480 0"/>
+    <path d="M162 384a504 504 0 0 1 700 0"/>
+  </g>
+</svg>

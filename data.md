@@ -1,0 +1,42 @@
+## owner names:
+- Carolina Silvera
+- Natalia Rodríguez
+- Silvina Laviaguerre
+- Lautaro Hinojosa
+- Gabriel Maciel
+- Yuliana Silva
+- Andrea Quintana
+- Gricell Medina
+- Mariana Fernandez
+- Romina Pouer
+- Romina Gonzales
+- Mikaela Reboledo
+- Joseline Morales
+- Martin Añon
+- Cristian Castro
+- Gonzalo Herrera
+- Maicol Sequeira
+- Nahuel Porta
+- Gabriel Bentancurt
+- Silvina Acosta
+- Gerardo Duartes
+- Gustavo Muñoz
+- Lorena Pereyra
+- Patricio Gimenez
+- Manuel Suarez
+- Francisco Sastre
+- José Ducasse
+- Fernando Segovia
+- Nahuel Porta
+- Matias Alonso
+- Otro
+
+## Área
+- Gerencia / Gobernancia
+- Seguridad
+- Recepción
+- Cadete / Garajista
+- Mantenimiento
+- Mucama
+- Vidriero
+- Playero
