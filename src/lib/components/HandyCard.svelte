@@ -16,9 +16,11 @@
     oncontextmenu: (e: MouseEvent) => void;
   } = $props();
 
-  const shortcutLabel = $derived(
-    handy.id <= 10 ? String(handy.id) : `Ctrl+${handy.id - 10}`,
-  );
+  const shortcutLabel = $derived(() => {
+    const base = handy.id % 10 === 0 ? 0 : handy.id % 10;
+    const keyLabel = base === 0 ? '0' : String(base);
+    return handy.id <= 10 ? keyLabel : `Ctrl+${keyLabel}`;
+  });
 </script>
 
 <div
