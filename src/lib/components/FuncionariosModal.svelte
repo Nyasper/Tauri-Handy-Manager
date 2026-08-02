@@ -582,7 +582,14 @@
 
   @media (max-width: 480px) {
     .tabs {
+      gap: 6px;
       padding: 12px 16px 0;
+    }
+
+    .tab-btn {
+      padding: 8px 6px;
+      font-size: 0.8rem;
+      white-space: nowrap;
     }
 
     .modal-body {
@@ -594,6 +601,10 @@
       align-items: stretch;
     }
 
+    .row-name {
+      overflow-wrap: anywhere;
+    }
+
     .row-actions {
       flex-wrap: wrap;
     }
@@ -601,6 +612,14 @@
     .row-actions .btn-sm {
       flex: 1;
       min-width: 90px;
+    }
+
+    .list-header {
+      flex-wrap: wrap;
+    }
+
+    :global(.modal-alert) {
+      margin: 0 16px 14px;
     }
   }
 </style>

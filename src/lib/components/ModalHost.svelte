@@ -92,4 +92,21 @@
   .modal-actions button {
     min-width: 120px;
   }
+
+  @media (max-width: 480px) {
+    .modal-body {
+      padding: 16px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+      min-width: 0;
+    }
+  }
+
+  @media (max-width: 360px) {
+    .modal-actions {
+      flex-direction: column;
+    }
+  }
 </style>

@@ -210,6 +210,20 @@
   }
 
   @media (max-width: 480px) {
+    .brand {
+      gap: 10px;
+    }
+
+    .brand-icon {
+      width: 26px;
+      height: 26px;
+    }
+
+    .brand h1 {
+      font-size: 1.15rem;
+      letter-spacing: 0.08em;
+    }
+
     .stats-bar {
       gap: 10px;
     }

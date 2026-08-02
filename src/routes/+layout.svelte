@@ -69,4 +69,18 @@
     max-width: 400px;
     text-align: center;
   }
+
+  @media (max-width: 480px) {
+    .loading-screen, .error-screen {
+      padding: 20px;
+    }
+
+    .error-screen h2 {
+      font-size: 1.4rem;
+    }
+
+    .error-screen p {
+      font-size: 0.9rem;
+    }
+  }
 </style>

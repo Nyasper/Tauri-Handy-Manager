@@ -71,6 +71,7 @@
     display: flex;
     justify-content: space-between;
     align-items: center;
+    gap: 8px;
     padding: 20px 24px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
   }
@@ -78,6 +79,7 @@
   .modal-header h3 {
     font-size: 1.2rem;
     color: #fff;
+    min-width: 0;
   }
 
   .close-btn {

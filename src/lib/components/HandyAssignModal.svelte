@@ -327,6 +327,11 @@
       padding: 16px;
     }
 
+    .owner-meta {
+      flex-wrap: wrap;
+      justify-content: flex-end;
+    }
+
     .action-buttons {
       flex-direction: column;
     }
