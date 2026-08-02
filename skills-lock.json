@@ -1,0 +1,35 @@
+{
+  "version": 1,
+  "skills": {
+    "bun": {
+      "source": "midudev/autoskills",
+      "sourceType": "autoskills-registry",
+      "computedHash": "1386ed5490ed278e38312a416c9aa074dbe3849f32ae7f841e4142fef5d4df94"
+    },
+    "svelte-code-writer": {
+      "source": "sveltejs/ai-tools",
+      "sourceType": "autoskills-registry",
+      "computedHash": "b5e12f4a6369f9e482d863fd0dde5cfc215041947902dacc416a2f9a50da166a"
+    },
+    "svelte5-best-practices": {
+      "source": "ejirocodes/agent-skills",
+      "sourceType": "autoskills-registry",
+      "computedHash": "89df0819dcaf5292635267d6e4262f274845c0efa3db7bc4c2a0d5aac2431117"
+    },
+    "tauri-v2": {
+      "source": "nodnarbnitram/claude-code-extensions",
+      "sourceType": "autoskills-registry",
+      "computedHash": "2a14a5e08e521136f42265bf52cc297e49c5d877ecd4179b563ad85957bbbc07"
+    },
+    "typescript-advanced-types": {
+      "source": "wshobson/agents",
+      "sourceType": "autoskills-registry",
+      "computedHash": "5ca0e177c6aaaba1889255691224daafdb7d71f317cc70bede1590d3907ded42"
+    },
+    "vite": {
+      "source": "antfu/skills",
+      "sourceType": "autoskills-registry",
+      "computedHash": "e0b52fe3ffea533e1e543ac8a8a20fccca3beed9f8bdc31a0934fe9f554439e8"
+    }
+  }
+}
