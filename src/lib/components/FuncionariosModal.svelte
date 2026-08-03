@@ -259,7 +259,7 @@
         class:active={activeTab === 'funcionarios'}
         onclick={() => setActiveTab('funcionarios')}
       >
-        Administración
+        Funcionarios
       </button>
       <button
         class="tab-btn"
