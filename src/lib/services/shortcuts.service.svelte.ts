@@ -236,14 +236,13 @@ class ShortcutsService {
     return elements[0] ?? null;
   }
 
-  /** Row-major arrow navigation across the main-page zones. */
-  private navigateMainPage(direction: Direction, e: KeyboardEvent) {
-    const all = this.getMainElements();
-    if (all.length === 0) return;
-    const rows = getRows(all);
+  /** Row-major arrow navigation within a set of elements. */
+  private navigateRows(direction: Direction, elements: HTMLElement[], e: KeyboardEvent) {
+    if (elements.length === 0) return;
+    const rows = getRows(elements);
     const active = document.activeElement;
     const current =
-      active instanceof HTMLElement && all.includes(active) ? active : null;
+      active instanceof HTMLElement && elements.includes(active) ? active : null;
 
     let target: HTMLElement | null = null;
 
@@ -286,6 +285,65 @@ class ShortcutsService {
     if (target && target !== current) {
       e.preventDefault();
       focusElement(target);
+    }
+  }
+
+  /** Row-major arrow navigation across the main-page zones. */
+  private navigateMainPage(direction: Direction, e: KeyboardEvent) {
+    this.navigateRows(direction, this.getMainElements(), e);
+  }
+
+  /**
+   * Group the top modal's focusable elements into sections marked with
+   * `data-nav-section`. Sections follow DOM order; unmarked elements go into
+   * a trailing "general" section (e.g. the modal close button).
+   */
+  private getModalSections(): HTMLElement[][] {
+    const top = this.topLayer;
+    if (!top?.scope) return [];
+    const focusables = Array.from(
+      top.scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter(isVisible);
+    if (focusables.length === 0) return [];
+
+    const marked = new Map<HTMLElement, HTMLElement[]>();
+    const order: HTMLElement[] = [];
+    const general: HTMLElement[] = [];
+
+    for (const el of focusables) {
+      const section = el.closest<HTMLElement>('[data-nav-section]');
+      if (section) {
+        if (!marked.has(section)) order.push(section);
+        const arr = marked.get(section) ?? [];
+        arr.push(el);
+        marked.set(section, arr);
+      } else {
+        general.push(el);
+      }
+    }
+
+    const sections = order
+      .map((container) => marked.get(container)!)
+      .filter((els) => els.length > 0);
+    if (general.length > 0) sections.push(general);
+    return sections;
+  }
+
+  /** Cycle the focus to the next/previous modal section. */
+  private focusNextSection(sections: HTMLElement[][], dir: 1 | -1) {
+    const active = document.activeElement;
+    const currentIdx = sections.findIndex(
+      (els) => active instanceof HTMLElement && els.includes(active),
+    );
+    const start =
+      currentIdx === -1 ? (dir === 1 ? -1 : sections.length) : currentIdx;
+    const n = sections.length;
+    for (let i = 1; i <= n; i++) {
+      const idx = (start + dir * i + n * 2) % n;
+      if (sections[idx].length > 0) {
+        focusElement(sections[idx][0]);
+        return;
+      }
     }
   }
 
@@ -354,9 +412,18 @@ class ShortcutsService {
       return;
     }
 
-    // Tab / Shift+Tab rotate between zones (native inside modals/menus)
+    // Tab / Shift+Tab rotate between zones on the main page, and between
+    // sections inside a modal with data-nav-section markers (native otherwise)
     if (e.key === 'Tab') {
-      if (this.topLayer || contextMenu.isOpen) return;
+      if (contextMenu.isOpen) return;
+      if (this.topLayer) {
+        const sections = this.getModalSections();
+        if (sections.length > 1) {
+          e.preventDefault();
+          this.focusNextSection(sections, e.shiftKey ? -1 : 1);
+        }
+        return;
+      }
       e.preventDefault();
       this.focusNextZone(e.shiftKey ? -1 : 1);
       return;
@@ -369,15 +436,20 @@ class ShortcutsService {
       const direction = e.key.slice(5).toLowerCase() as Direction;
 
       if (this.topLayer) {
-        // Modal: spatial navigation within the modal scope
-        const elements = this.getModalElements();
-        if (elements.length === 0) return;
-        const current = this.currentNavElement(elements);
-        if (!current) return;
-        const next = pickNext(direction, elements, current);
-        if (next) {
-          e.preventDefault();
-          focusElement(next);
+        if (this.getModalSections().length > 1) {
+          // Modal with sections: row-major navigation across all focusables
+          this.navigateRows(direction, this.getModalElements(), e);
+        } else {
+          // Modal without sections: spatial navigation within the modal scope
+          const elements = this.getModalElements();
+          if (elements.length === 0) return;
+          const current = this.currentNavElement(elements);
+          if (!current) return;
+          const next = pickNext(direction, elements, current);
+          if (next) {
+            e.preventDefault();
+            focusElement(next);
+          }
         }
         return;
       }

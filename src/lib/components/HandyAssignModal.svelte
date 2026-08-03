@@ -123,13 +123,15 @@
       <form onsubmit={handleSave} class="assignment-form">
         <div class="form-group">
           <label for="assign-owner-search">Funcionario</label>
-          <SearchInput
-            id="assign-owner-search"
-            bind:value={searchInput}
-            placeholder="Buscar por nombre o área..."
-          />
+          <div data-nav-section="search">
+            <SearchInput
+              id="assign-owner-search"
+              bind:value={searchInput}
+              placeholder="Buscar por nombre o área..."
+            />
+          </div>
 
-          <div class="owners-list">
+          <div class="owners-list" data-nav-section="list">
             {#each filteredOwners as owner (owner.id)}
               <button
                 type="button"
@@ -171,7 +173,7 @@
           <Alert type="success">{actionSuccess}</Alert>
         {/if}
 
-        <div class="action-buttons">
+        <div class="action-buttons" data-nav-section="actions">
           {#if handy.owner_id}
             <button type="submit" class="btn-primary" disabled={selectedOwnerId == null}>
               Guardar Cambios
