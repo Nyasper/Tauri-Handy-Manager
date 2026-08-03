@@ -92,6 +92,17 @@ class HandyDB {
     await this.db.execute(
       "CREATE TABLE IF NOT EXISTS handies (id INTEGER PRIMARY KEY, owner_id INTEGER REFERENCES owners(id), fixed INTEGER NOT NULL DEFAULT 0)",
     );
+    const [{ count }] = await this.db.select<{ count: number }[]>(
+      "SELECT COUNT(*) AS count FROM handies",
+    );
+    if (count === 0) {
+      for (let i = 1; i <= 20; i++) {
+        await this.db.execute(
+          "INSERT OR IGNORE INTO handies (id, owner_id, fixed) VALUES (?, NULL, 0)",
+          [i],
+        );
+      }
+    }
     await this.db.execute(
       "CREATE TABLE IF NOT EXISTS handy_history (id INTEGER PRIMARY KEY AUTOINCREMENT, handy_id INTEGER NOT NULL, action TEXT NOT NULL, owner_id INTEGER, owner_name TEXT NOT NULL, timestamp TEXT NOT NULL)",
     );

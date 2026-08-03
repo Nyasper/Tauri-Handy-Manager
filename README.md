@@ -76,7 +76,39 @@ bun run dev
 bun run tauri build
 ```
 
-Genera el instalador/paquete nativo en `src-tauri/target/release/` (los targets dependen de la configuración en `src-tauri/tauri.conf.json`).
+Genera el instalador/paquete nativo en `src-tauri/target/release/` (los targets dependen de la configuración en `src-tauri/tauri.conf.json`). En Linux, el AppImage quedó descartado (WebKitGTK empaquetado no es compatible con los stacks gráficos nuevos como Mesa 26 en Fedora 44): se distribuye vía paquetes nativos que usan el WebKitGTK del sistema.
+
+```bash
+bun run tauri build --bundles deb,rpm
+```
+
+### Instalación en Linux
+
+- **Fedora / RHEL / openSUSE** (`.rpm`): usa el WebKitGTK del sistema (recomendado).
+
+  ```bash
+  sudo dnf install handy-manager-*.x86_64.rpm
+  ```
+
+- **Debian / Ubuntu** (`.deb`): usa el WebKitGTK del sistema.
+
+  ```bash
+  sudo apt install ./handy-manager_*_amd64.deb
+  ```
+
+> Nota: en distribuciones muy nuevas (p. ej. Fedora 44) es imprescindible instalar vía `.rpm`/`.deb`: los AppImage que empaquetan su propio WebKitGTK (compilado en otra distro) pueden mostrar una ventana en blanco y crashear `WebKitWebProcess` (SIGABRT) por incompatibilidad con Mesa/GL del sistema.
+
+#### Binario portable (`handy-manager-linux-x64`)
+
+Es el binario compilado sin empaquetar (como el `.exe` portable de Windows). Usa el WebKitGTK del sistema de cada distro y requiere los requisitos de Tauri:
+
+```bash
+chmod +x handy-manager-linux-x64
+./handy-manager-linux-x64
+```
+
+- Requiere `webkit2gtk4.1` (Fedora) o `libwebkit2gtk-4.1-0` (Debian/Ubuntu), GTK 3 y libsoup3.
+- Compilado en `ubuntu-22.04` (glibc 2.35): funciona en **Debian 12+, Ubuntu 22.04+ y Fedora 42+**. En sistemas con glibc anterior falla con `version 'GLIBC_x.x' not found`.
 
 ## Scripts disponibles
 
