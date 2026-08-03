@@ -17,6 +17,22 @@ Aplicación de escritorio sencilla para administrar y asignar handies (radios po
 - **Menú contextual** en las tarjetas con acciones rápidas (asignar, revocar, reasignar, fijar).
 - **Diálogos propios** (confirmar / alerta / prompt) reemplazando los nativos del navegador.
 
+## Atajos de teclado
+
+La aplicación es 100% navegable con el teclado:
+
+- **Flechas** (`←` `→` `↑` `↓`): navegan los elementos en orden fila-mayor (rotando al llegar al borde). Dentro de un modal, navegan entre sus elementos; en inputs/selects conservan el comportamiento nativo.
+- **`Tab` / `Shift`+`Tab`**: saltan entre zonas/secciones.
+  - Página principal: `Encabezado → Buscador → Cuadrícula`.
+  - Modal "Asignar handy": `Búsqueda → Lista → Acciones`.
+  - Modal "Administración": `Tabs → Contenido de la pestaña activa → Cerrar`.
+- **`Enter`**: aceptar / confirmar la acción enfocada.
+- **`Esc` / `Supr`**: salir de un modal, cerrar un menú o volver.
+- **`1`-`0`**: selección rápida de los handies 1 al 10; **`Ctrl`+`1`-`0`** para los handies 11 al 20.
+- **`Ctrl`+`O`**: abre Administración. **`Ctrl`+`H`**: abre Historial.
+
+Los atajos se muestran también en la barra inferior de la página principal.
+
 ## Tecnologías
 
 | Capa | Tecnología |
