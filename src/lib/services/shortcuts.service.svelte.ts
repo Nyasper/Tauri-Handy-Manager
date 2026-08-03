@@ -1,4 +1,5 @@
 import { browser } from '$app/environment';
+import type { Attachment } from 'svelte/attachments';
 import { contextMenu } from './context-menu.service.svelte';
 import { handyDB } from './db.service.svelte';
 
@@ -181,22 +182,22 @@ class ShortcutsService {
   }
 
   /**
-   * Svelte action that registers an element for arrow-key navigation.
+   * Attachment factory that registers an element for arrow-key navigation.
    * Provide a zone to join the main-page navigation zones, or leave it
    * undefined for elements that should not participate (e.g. modal inputs).
    */
-  rovingFocus = (el: HTMLElement, zone?: NavZone) => {
-    if (zone) {
-      const target = this.zones.find((z) => z.id === zone);
-      target?.elements.add(el);
-    }
-    return {
-      destroy: () => {
+  rovingFocus = (zone?: NavZone): Attachment<HTMLElement> => {
+    return (el) => {
+      if (zone) {
+        const target = this.zones.find((z) => z.id === zone);
+        target?.elements.add(el);
+      }
+      return () => {
         if (zone) {
           const target = this.zones.find((z) => z.id === zone);
           target?.elements.delete(el);
         }
-      },
+      };
     };
   };
 

@@ -21,7 +21,7 @@
     <circle cx="11" cy="11" r="8"></circle>
     <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
   </svg>
-  <input {id} type="text" bind:value {placeholder} autocomplete="off" use:shortcuts.rovingFocus={navZone} />
+  <input {id} type="text" bind:value {placeholder} autocomplete="off" {@attach shortcuts.rovingFocus(navZone)} />
 </div>
 
 <style>
