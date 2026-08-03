@@ -23,7 +23,7 @@
   class:pinned={pinned}
   role="button"
   tabindex="0"
-  use:shortcuts.rovingFocus
+  use:shortcuts.rovingFocus={'grid'}
   onclick={onassign}
   oncontextmenu={oncontextmenu}
   onkeydown={(e) => {

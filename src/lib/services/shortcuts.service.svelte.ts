@@ -15,7 +15,16 @@ export interface AppActions {
   resetView: () => void;
 }
 
+export type NavZone = 'header' | 'search' | 'grid';
+
+const ZONE_IDS: NavZone[] = ['header', 'search', 'grid'];
+
 type Direction = 'left' | 'right' | 'up' | 'down';
+
+interface Zone {
+  id: NavZone;
+  elements: Set<HTMLElement>;
+}
 
 const FOCUSABLE_SELECTOR = [
   'button:not(:disabled)',
@@ -108,6 +117,27 @@ function pickNext(
   return best ?? wrap;
 }
 
+/** Group elements into rows by vertical overlap, each row sorted left-to-right. */
+function getRows(elements: HTMLElement[]): HTMLElement[][] {
+  const sorted = [...elements].sort(
+    (a, b) => a.getBoundingClientRect().top - b.getBoundingClientRect().top,
+  );
+  const rows: HTMLElement[][] = [];
+  for (const el of sorted) {
+    const r = el.getBoundingClientRect();
+    const row = rows.find((rr) => {
+      const tr = rr[0].getBoundingClientRect();
+      return r.top < tr.bottom && r.bottom > tr.top;
+    });
+    if (row) row.push(el);
+    else rows.push([el]);
+  }
+  for (const row of rows) {
+    row.sort((a, b) => a.getBoundingClientRect().left - b.getBoundingClientRect().left);
+  }
+  return rows;
+}
+
 function focusElement(el: HTMLElement | null) {
   if (!el) return;
   el.focus({ preventScroll: true });
@@ -124,8 +154,8 @@ function focusElement(el: HTMLElement | null) {
 }
 
 class ShortcutsService {
+  private zones: Zone[] = ZONE_IDS.map((id) => ({ id, elements: new Set<HTMLElement>() }));
   private layers: ModalLayer[] = [];
-  private focusables = new Set<HTMLElement>();
   private actions: AppActions | null = null;
 
   constructor() {
@@ -150,18 +180,151 @@ class ShortcutsService {
     };
   }
 
-  /** Svelte action that registers an element for arrow-key navigation. */
-  rovingFocus = (el: HTMLElement) => {
-    this.focusables.add(el);
+  /**
+   * Svelte action that registers an element for arrow-key navigation.
+   * Provide a zone to join the main-page navigation zones, or leave it
+   * undefined for elements that should not participate (e.g. modal inputs).
+   */
+  rovingFocus = (el: HTMLElement, zone?: NavZone) => {
+    if (zone) {
+      const target = this.zones.find((z) => z.id === zone);
+      target?.elements.add(el);
+    }
     return {
       destroy: () => {
-        this.focusables.delete(el);
+        if (zone) {
+          const target = this.zones.find((z) => z.id === zone);
+          target?.elements.delete(el);
+        }
       },
     };
   };
 
   private get topLayer(): ModalLayer | null {
     return this.layers.length > 0 ? this.layers[this.layers.length - 1] : null;
+  }
+
+  private zoneOf(el: Element | null): NavZone | null {
+    if (!el || !(el instanceof HTMLElement)) return null;
+    for (const zone of this.zones) {
+      if (zone.elements.has(el)) return zone.id;
+    }
+    return null;
+  }
+
+  private getMainElements(): HTMLElement[] {
+    const els: HTMLElement[] = [];
+    for (const zone of this.zones) {
+      for (const el of zone.elements) {
+        if (isVisible(el)) els.push(el);
+      }
+    }
+    return els;
+  }
+
+  private getModalElements(): HTMLElement[] {
+    const top = this.topLayer;
+    if (!top?.scope) return [];
+    return Array.from(
+      top.scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
+    ).filter(isVisible);
+  }
+
+  private currentNavElement(elements: HTMLElement[]): HTMLElement | null {
+    const active = document.activeElement;
+    if (active instanceof HTMLElement && elements.includes(active)) return active;
+    return elements[0] ?? null;
+  }
+
+  /** Row-major arrow navigation across the main-page zones. */
+  private navigateMainPage(direction: Direction, e: KeyboardEvent) {
+    const all = this.getMainElements();
+    if (all.length === 0) return;
+    const rows = getRows(all);
+    const active = document.activeElement;
+    const current =
+      active instanceof HTMLElement && all.includes(active) ? active : null;
+
+    let target: HTMLElement | null = null;
+
+    if (current) {
+      const cr = current.getBoundingClientRect();
+      let rowIdx = rows.findIndex((row) => row.includes(current));
+      if (rowIdx === -1) rowIdx = 0;
+      const colIdx = rows[rowIdx].indexOf(current);
+
+      if (direction === 'right' || direction === 'left') {
+        const delta = direction === 'right' ? 1 : -1;
+        const nextCol = colIdx + delta;
+        if (nextCol >= 0 && nextCol < rows[rowIdx].length) {
+          target = rows[rowIdx][nextCol];
+        } else {
+          let r = rowIdx + delta;
+          if (r < 0) r = rows.length - 1;
+          if (r >= rows.length) r = 0;
+          if (r === rowIdx) {
+            target = rows[rowIdx][(nextCol + rows[rowIdx].length) % rows[rowIdx].length];
+          } else {
+            target = delta === 1 ? rows[r][0] : rows[r][rows[r].length - 1];
+          }
+        }
+      } else {
+        const delta = direction === 'down' ? 1 : -1;
+        let r = rowIdx + delta;
+        if (r < 0) r = rows.length - 1;
+        if (r >= rows.length) r = 0;
+        if (r === rowIdx) {
+          target = rows[rowIdx][0];
+        } else {
+          target = this.nearestInRow(rows[r], cr);
+        }
+      }
+    } else {
+      target = rows[0]?.[0] ?? null;
+    }
+
+    if (target && target !== current) {
+      e.preventDefault();
+      focusElement(target);
+    }
+  }
+
+  private nearestInRow(row: HTMLElement[], cr: DOMRect): HTMLElement {
+    let best = row[0];
+    let bestDist = Infinity;
+    const cCenter = (cr.left + cr.right) / 2;
+    for (const el of row) {
+      const r = el.getBoundingClientRect();
+      const center = (r.left + r.right) / 2;
+      const d = Math.abs(center - cCenter);
+      if (d < bestDist) {
+        bestDist = d;
+        best = el;
+      }
+    }
+    return best;
+  }
+
+  /** Cycle the focus to the next/previous zone (header → search → grid → header). */
+  private focusNextZone(dir: 1 | -1) {
+    const active = document.activeElement;
+    const activeZone = this.zoneOf(active);
+    let startIdx: number;
+    if (activeZone) {
+      startIdx = ZONE_IDS.indexOf(activeZone);
+    } else {
+      startIdx = dir === 1 ? -1 : ZONE_IDS.length;
+    }
+
+    const n = ZONE_IDS.length;
+    for (let i = 1; i <= n; i++) {
+      const idx = (startIdx + dir * i + n * 2) % n;
+      const visible = Array.from(this.zones[idx].elements).filter(isVisible);
+      if (visible.length > 0) {
+        focusElement(visible[0]);
+        return;
+      }
+    }
   }
 
   private handleKeyDown = (e: KeyboardEvent) => {
@@ -191,20 +354,36 @@ class ShortcutsService {
       return;
     }
 
+    // Tab / Shift+Tab rotate between zones (native inside modals/menus)
+    if (e.key === 'Tab') {
+      if (this.topLayer || contextMenu.isOpen) return;
+      e.preventDefault();
+      this.focusNextZone(e.shiftKey ? -1 : 1);
+      return;
+    }
+
     // Arrow-key navigation
     if (e.key.startsWith('Arrow')) {
       if (editable) return;
       if (contextMenu.isOpen) return; // the menu handles its own arrows
       const direction = e.key.slice(5).toLowerCase() as Direction;
-      const elements = this.getNavElements();
-      if (elements.length === 0) return;
-      const current = this.currentNavElement(elements);
-      if (!current) return;
-      const next = pickNext(direction, elements, current);
-      if (next) {
-        e.preventDefault();
-        focusElement(next);
+
+      if (this.topLayer) {
+        // Modal: spatial navigation within the modal scope
+        const elements = this.getModalElements();
+        if (elements.length === 0) return;
+        const current = this.currentNavElement(elements);
+        if (!current) return;
+        const next = pickNext(direction, elements, current);
+        if (next) {
+          e.preventDefault();
+          focusElement(next);
+        }
+        return;
       }
+
+      // Main page: row-major navigation across zones
+      this.navigateMainPage(direction, e);
       return;
     }
 
@@ -258,22 +437,6 @@ class ShortcutsService {
     const handyId = withCtrl ? base + 10 : base;
     if (!handyDB.handies.some((h) => h.id === handyId)) return;
     this.actions.quickSelect(handyId);
-  }
-
-  private getNavElements(): HTMLElement[] {
-    const top = this.topLayer;
-    if (top?.scope) {
-      return Array.from(
-        top.scope.querySelectorAll<HTMLElement>(FOCUSABLE_SELECTOR),
-      ).filter(isVisible);
-    }
-    return Array.from(this.focusables).filter(isVisible);
-  }
-
-  private currentNavElement(elements: HTMLElement[]): HTMLElement | null {
-    const active = document.activeElement;
-    if (active instanceof HTMLElement && elements.includes(active)) return active;
-    return elements[0] ?? null;
   }
 }
 

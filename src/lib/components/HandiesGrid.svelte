@@ -28,6 +28,7 @@
       <SearchInput
         class="page-search"
         id="handies-filter"
+        navZone="search"
         bind:value={filterInput}
         placeholder="Filtrar por nombre o área..."
       />
