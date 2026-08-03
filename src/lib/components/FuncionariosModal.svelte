@@ -253,7 +253,7 @@
 </script>
 
 <AppModal title="Administración" onclose={onclose}>
-  <div class="tabs">
+  <div class="tabs" data-nav-section="tabs">
       <button
         class="tab-btn"
         class:active={activeTab === 'funcionarios'}
@@ -279,13 +279,15 @@
 
     {#if activeTab === 'funcionarios'}
       <div class="modal-body">
-        <SearchInput
-          id="owner-search"
-          bind:value={searchInput}
-          placeholder="Buscar por nombre o área..."
-        />
+        <div data-nav-section="search">
+          <SearchInput
+            id="owner-search"
+            bind:value={searchInput}
+            placeholder="Buscar por nombre o área..."
+          />
+        </div>
 
-        <div class="funcionarios-list">
+        <div class="funcionarios-list" data-nav-section="list">
           {#each filteredOwners as owner (owner.id)}
             <div class="row-item">
               <div class="row-info">
@@ -347,7 +349,7 @@
       </div>
     {:else if activeTab === 'areas'}
       <div class="modal-body">
-        <div class="funcionarios-list">
+        <div class="funcionarios-list" data-nav-section="list">
           {#each handyDB.areas as area (area.id)}
             <div class="row-item">
               <div class="row-info">
@@ -370,7 +372,7 @@
           {/each}
         </div>
 
-        <form onsubmit={handleAreaSubmit} class="modal-form">
+        <form onsubmit={handleAreaSubmit} class="modal-form" data-nav-section="form">
           <h4>Nueva área</h4>
           <div class="form-group">
             <label for="modal-area-name">Nombre del área</label>
@@ -391,13 +393,13 @@
       </div>
     {:else}
       <div class="modal-body">
-        <div class="list-header">
+        <div class="list-header" data-nav-section="header">
           <span class="row-muted">{handyDB.handies.length} handies</span>
           <button type="button" class="btn-primary btn-sm" onclick={addHandy}>
             Agregar handy
           </button>
         </div>
-        <div class="funcionarios-list">
+        <div class="funcionarios-list" data-nav-section="list">
           {#each handyDB.handies as handy (handy.id)}
             <div class="row-item">
               <div class="row-info">
