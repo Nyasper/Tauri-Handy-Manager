@@ -1,5 +1,6 @@
 <script lang="ts">
-  import { handyDB } from '$lib\/services/db.service.svelte';
+  import { onMount } from 'svelte';
+  import { handyDB } from '$lib/services/db.service.svelte';
   import AppModal from './AppModal.svelte';
   import Alert from './Alert.svelte';
   import { modalService } from '$lib/services/modal.service.svelte';
@@ -17,8 +18,13 @@
   let error = $state<string | null>(null);
   let success = $state<string | null>(null);
 
-  handyDB.getSecurityPassword().then((pw) => {
-    passwordSet = pw != null && pw !== '';
+  onMount(async () => {
+    try {
+      const pw = await handyDB.getSecurityPassword();
+      passwordSet = pw != null && pw !== '';
+    } catch {
+      passwordSet = false;
+    }
   });
 
   function clearFeedback() {
@@ -323,7 +329,6 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    overflow-y: auto;
   }
 
   .security-panel {

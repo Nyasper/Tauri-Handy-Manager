@@ -60,11 +60,17 @@
       exportError = 'No hay eventos que exportar';
       return;
     }
-    const path = await save({
-      title: 'Exportar historial',
-      defaultPath: 'historial.csv',
-      filters: [{ name: 'CSV', extensions: ['csv'] }],
-    });
+    let path: string | null;
+    try {
+      path = await save({
+        title: 'Exportar historial',
+        defaultPath: 'historial.csv',
+        filters: [{ name: 'CSV', extensions: ['csv'] }],
+      });
+    } catch (err: any) {
+      exportError = err.message || 'Error al elegir el archivo de exportación';
+      return;
+    }
     if (!path) return;
     exporting = true;
     try {
@@ -181,15 +187,25 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    overflow-y: auto;
   }
 
   .history-toolbar {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
     justify-content: space-between;
     align-items: center;
     gap: 12px;
     flex-wrap: wrap;
+    margin: -20px -24px 0;
+    padding: 20px 24px 16px;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 14, 18, 0.97) 0%,
+      rgba(13, 14, 18, 0.97) 72%,
+      rgba(13, 14, 18, 0) 100%
+    );
   }
 
   .history-toolbar :global(.search-group) {
@@ -380,6 +396,8 @@
     .history-toolbar {
       flex-direction: column;
       align-items: stretch;
+      margin: -14px -16px 0;
+      padding: 14px 16px 16px;
     }
 
     .history-stats {

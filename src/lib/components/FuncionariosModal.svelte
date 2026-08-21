@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { handyDB, type Owner } from '$lib\/services/db.service.svelte';
+  import { handyDB, type Owner } from '$lib/services/db.service.svelte';
   import AppModal from './AppModal.svelte';
   import Alert from './Alert.svelte';
   import SearchInput from './SearchInput.svelte';
@@ -294,6 +294,7 @@
 
         <div class="funcionarios-list" data-nav-section="list">
           {#each filteredOwners as owner (owner.id)}
+            {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
             <div class="row-item">
               <div class="row-info">
                 <span class="row-name">{owner.name}</span>
@@ -303,8 +304,8 @@
                   {:else}
                     <span class="row-muted">Sin área</span>
                   {/if}
-                  {#if handyDB.handyByOwner.get(owner.id) != null}
-                    <span class="handy-badge-sm">Handy #{handyDB.handyByOwner.get(owner.id)}</span>
+                  {#if ownerHandyId != null}
+                    <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
                   {/if}
                 </span>
               </div>
@@ -444,9 +445,18 @@
 
 <style>
   .tabs {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
     gap: 8px;
-    padding: 16px 24px 0;
+    padding: 16px 24px 10px;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 14, 18, 0.97) 0%,
+      rgba(13, 14, 18, 0.97) 72%,
+      rgba(13, 14, 18, 0) 100%
+    );
   }
 
   .tab-btn {
@@ -474,7 +484,6 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    overflow-y: auto;
   }
 
   .funcionarios-list {
@@ -591,7 +600,7 @@
   @media (max-width: 480px) {
     .tabs {
       gap: 6px;
-      padding: 12px 16px 0;
+      padding: 12px 16px 10px;
     }
 
     .tab-btn {
