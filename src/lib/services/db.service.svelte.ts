@@ -672,7 +672,11 @@ export function historyToCsv(entries: HistoryEntry[]): string {
         });
     const hora = Number.isNaN(date.getTime())
       ? ''
-      : date.toLocaleTimeString('es-UY', { hour: '2-digit', minute: '2-digit' });
+      : date.toLocaleTimeString('es-UY', {
+          hour: '2-digit',
+          minute: '2-digit',
+          hour12: false,
+        });
     return [
       String(entry.handy_id),
       entry.action === 'assign' ? 'Vinculado' : 'Desvinculado',

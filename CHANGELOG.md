@@ -38,6 +38,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ### Cambiado
 
+- La hora en el historial (interfaz y export CSV) se muestra en formato de 24 horas.
 - La pantalla de inicio usa un layout de app-shell: el header y los atajos quedan fijos y la cuadrícula de handies scrollea internamente, con el campo de búsqueda fijo (sticky) arriba del área scrolleable.
 - Los modals ahora mantienen su header (título y botón cerrar) siempre visible mientras el contenido scrollea debajo; las barras de Administración (pestañas), Historial (búsqueda/filtros/exportar) y Asignar Handy (búsqueda) quedan fijas al scrollear.
 - La aplicación inicia sin áreas precargadas: las áreas por defecto ya no se siembran al crear la base de datos, permitiendo empezar sin datos y hacer persistente su eliminación.
