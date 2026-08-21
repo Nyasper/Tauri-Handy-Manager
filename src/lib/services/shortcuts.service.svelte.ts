@@ -154,6 +154,13 @@ function focusElement(el: HTMLElement | null) {
   }
 }
 
+/**
+ * Servicio global de teclado y navegación.
+ *
+ * Gestiona atajos globales (Ctrl+O/H, números), el cierre de modales con
+ * Escape/Enter/Delete y la navegación por flechas, pestañas y zonas entre
+ * los elementos registrados con `rovingFocus`.
+ */
 class ShortcutsService {
   private zones: Zone[] = ZONE_IDS.map((id) => ({ id, elements: new Set<HTMLElement>() }));
   private layers: ModalLayer[] = [];
@@ -164,7 +171,10 @@ class ShortcutsService {
     window.addEventListener('keydown', this.handleKeyDown);
   }
 
-  /** Register the app-level action handlers. Returns an unregister function. */
+  /**
+   * Registra los manejadores de acciones globales de la app.
+   * @returns Función para desregistrar los manejadores.
+   */
   setAppActions(actions: AppActions): () => void {
     this.actions = actions;
     return () => {
@@ -172,7 +182,10 @@ class ShortcutsService {
     };
   }
 
-  /** Push a modal layer onto the stack. Returns an unregister function. */
+  /**
+   * Registra una capa de modal en la pila para teclas de dismiss/confirm.
+   * @returns Función para desregistrar la capa.
+   */
   pushModal(layer: ModalLayer): () => void {
     this.layers.push(layer);
     return () => {
@@ -182,9 +195,9 @@ class ShortcutsService {
   }
 
   /**
-   * Attachment factory that registers an element for arrow-key navigation.
-   * Provide a zone to join the main-page navigation zones, or leave it
-   * undefined for elements that should not participate (e.g. modal inputs).
+   * Factoria de attachments que registra un elemento para la navegación por flechas.
+   * Proporciona una zona para unirse a las zonas de la página principal, o déjala
+   * sin definir para elementos que no deben participar (p. ej. inputs de un modal).
    */
   rovingFocus = (zone?: NavZone): Attachment<HTMLElement> => {
     return (el) => {
@@ -397,8 +410,10 @@ class ShortcutsService {
         e.preventDefault();
         return;
       }
-      if (!contextMenu.isOpen) this.resetView();
-      e.preventDefault();
+      if (!contextMenu.isOpen) {
+        this.resetView();
+        e.preventDefault();
+      }
       return;
     }
 
@@ -461,7 +476,7 @@ class ShortcutsService {
     }
 
     // Global app shortcuts only apply when no modal / menu is open
-    if (this.topLayer || contextMenu.isOpen) return;
+    if (this.topLayer || contextMenu.isOpen || editable) return;
 
     if (e.ctrlKey && !e.metaKey && !e.altKey && !e.shiftKey) {
       const key = e.key.toLowerCase();

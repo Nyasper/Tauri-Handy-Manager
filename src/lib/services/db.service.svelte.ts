@@ -33,6 +33,13 @@ export interface HistoryEntry {
   timestamp: string;
 }
 
+/**
+ * Servicio de base de datos SQLite (plugin Tauri) con estado reactivo.
+ *
+ * Mantiene sincronizados `handies`, `owners`, `areas` e `history` con la base
+ * de datos y expone operaciones de creación/actualización/eliminación que
+ * refrescan el estado tras cada cambio.
+ */
 class HandyDB {
   private db: Database | null = null;
 
@@ -66,6 +73,7 @@ class HandyDB {
     this.initDb();
   }
 
+  /** Carga la base de datos, asegura el esquema y carga los datos iniciales. */
   async initDb() {
     try {
       this.loading = true;
@@ -109,21 +117,9 @@ class HandyDB {
     await this.db.execute(
       "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)",
     );
-    for (const name of [
-      'Gerencia / Gobernancia',
-      'Seguridad',
-      'Recepción',
-      'Cadete / Garajista',
-      'Mantenimiento',
-      'Mucama',
-      'Vidriero',
-      'Playero',
-      'Otro',
-    ]) {
-      await this.db.execute("INSERT OR IGNORE INTO areas (name) VALUES (?)", [name]);
-    }
   }
 
+  /** Recarga todos los datos desde la base de datos y actualiza el estado reactivo. */
   async refresh() {
     if (!this.db) return;
     try {
@@ -146,6 +142,7 @@ class HandyDB {
           "SELECT id, handy_id, action, owner_id, owner_name, timestamp FROM handy_history ORDER BY timestamp DESC, id DESC",
         ),
       ]);
+      this.error = null;
       this.handies = handies.map((h) => ({ ...h, fixed: !!h.fixed }));
       this.owners = owners;
       this.areas = areas;
@@ -334,6 +331,8 @@ class HandyDB {
     const newOwner = this.owners.find((o) => o.id === ownerId);
     if (!newOwner) throw new Error("El funcionario seleccionado no existe");
 
+    if (handy?.owner_id === ownerId) return;
+
     await this.db.execute("UPDATE handies SET owner_id = ? WHERE id = ?", [
       ownerId,
       id,
@@ -367,6 +366,7 @@ class HandyDB {
     await this.assignToOwner(id, owner.id);
   }
 
+  /** Desvincula un handy de su funcionario y registra el evento en el historial. */
   async unassign(id: number) {
     if (!this.db) {
       throw new Error("La base de datos no está inicializada");
@@ -410,7 +410,10 @@ class HandyDB {
       "INSERT INTO handies (owner_id, fixed) VALUES (NULL, 0)",
     );
     await this.refresh();
-    return res.lastInsertId!;
+    if (typeof res.lastInsertId !== "number") {
+      throw new Error("No se pudo obtener el id del nuevo handy");
+    }
+    return res.lastInsertId;
   }
 
   /** Delete a handy. It must be unassigned (no owner). */
