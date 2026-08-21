@@ -70,24 +70,19 @@
         { label: 'Asignar handy', action: () => openAssignModal(handy.id) },
       ];
     } else {
-      items = [
-        {
-          label: 'Revocar Asignación',
-          action: () => handyDB.unassign(handy.id),
-          disabled: handy.fixed,
-        },
-        { isSeparator: true },
-        {
-          label: 'Reasignar handy',
-          action: () => openAssignModal(handy.id),
-          disabled: handy.fixed,
-        },
-        { isSeparator: true },
-        {
-          label: handy.fixed ? 'Desfijar' : 'Fijar handy',
-          action: () => handyDB.toggleFixed(handy.id),
-        },
-      ];
+      items = [];
+      if (!handy.fixed) {
+        items.push(
+          { label: 'Revocar Asignación', action: () => handyDB.unassign(handy.id) },
+          { isSeparator: true },
+          { label: 'Reasignar handy', action: () => openAssignModal(handy.id) },
+          { isSeparator: true },
+        );
+      }
+      items.push({
+        label: handy.fixed ? 'Desfijar' : 'Fijar handy',
+        action: () => handyDB.toggleFixed(handy.id),
+      });
     }
 
     contextMenu.show(e, 'handy', items);
