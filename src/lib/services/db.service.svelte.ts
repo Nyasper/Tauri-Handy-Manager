@@ -283,6 +283,15 @@ class HandyDB {
     const normalized = name.trim();
     if (!normalized) throw new Error("El nombre del área no puede estar vacío");
 
+    const current = this.areas.find((a) => a.id === id);
+    if (
+      current &&
+      current.name.trim().toLowerCase() === 'otro' &&
+      normalized.toLowerCase() !== 'otro'
+    ) {
+      throw new Error("No se puede renombrar el área por defecto 'Otro'");
+    }
+
     const duplicate = this.areas.find(
       (a) => a.id !== id && a.name.trim().toLowerCase() === normalized.toLowerCase(),
     );
@@ -294,9 +303,14 @@ class HandyDB {
     await this.refresh();
   }
 
-  /** Delete an area. If it's the only one, throws. Reassigns its owners to another area. */
+  /** Delete an area. The default one ('Otro') can't be removed; if it's the only one, throws. Reassigns its owners to another area. */
   async deleteArea(id: number) {
     if (!this.db) throw new Error("La base de datos no está inicializada");
+
+    const current = this.areas.find((a) => a.id === id);
+    if (current && current.name.trim().toLowerCase() === 'otro') {
+      throw new Error("No se puede eliminar el área por defecto 'Otro'");
+    }
 
     const remaining = this.areas.filter((a) => a.id !== id);
     if (remaining.length === 0) {

@@ -4,7 +4,7 @@ Aplicación de escritorio sencilla para administrar y asignar handies (radios po
 
 ## Funcionalidades
 
-- **Cuadrícula de handies**: vista en tarjetas del total de handies con su estado (asignado / libre) y dueño actual.
+- **Lista de handies**: vista en tarjetas del total de handies con su estado (asignado / libre) y dueño actual.
 - **Asignación de handies**: clic sobre un handy abre un modal para asignarlo a un funcionario, reasignarlo o desvincularlo.
 - **Fijar handies (pin)**: cualquier handy asignado puede fijarse (ícono de pin en la tarjeta, o desde el menú contextual) y queda agrupado en la sección **Fijados** en la parte superior. La columna `fixed` de la BD persiste el estado.
 - **Filtros**:

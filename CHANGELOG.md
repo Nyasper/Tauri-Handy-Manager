@@ -26,6 +26,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 - Manejar correctamente las promesas de los diálogos de archivo (exportar CSV, copia de seguridad) y la carga de la contraseña de seguridad.
 - En el modal de asignación, al abrir un handy ya asignado, por defecto solo se muestra el botón **Desvincular**; el botón de reasignar aparece únicamente al seleccionar otro funcionario.
 - Eliminar un espacio sobrante en el texto de la opción "Agregar funcionario y asignar handy" (el salto de línea del template generaba doble espacio alrededor del nombre).
+- Impedir eliminar o renombrar el área por defecto **Otro**: al quitarla, los nuevos funcionarios perdían su área por defecto y el default pasaba silenciosamente a otra área. Ahora los botones Renombrar/Eliminar de esa área están deshabilitados (con el badge "Por defecto") y la capa de datos la protege.
+- Al renombrar un funcionario sin área válida, ya no se intenta asignar el área inexistente `0`: se muestra un error claro si no hay áreas disponibles.
 
 ### Mejorado
 

@@ -43,7 +43,7 @@
     />
 
     <HandySection
-      title={fixedHandies.length > 0 ? 'Otros handies' : 'Cuadrícula de Handies'}
+      title={fixedHandies.length > 0 ? 'Otros handies' : 'Lista de Handies'}
       handies={otherHandies}
       {onassign}
       {onpin}
