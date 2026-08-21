@@ -4,16 +4,12 @@
   import HandySection from './HandySection.svelte';
 
   let {
-    fixedHandies,
-    otherHandies,
     filteredHandies,
     filterInput = $bindable(''),
     onassign,
     onpin,
     oncontextmenu,
   }: {
-    fixedHandies: Handy[];
-    otherHandies: Handy[];
     filteredHandies: Handy[];
     filterInput: string;
     onassign: (id: number) => void;
@@ -35,16 +31,8 @@
     </div>
 
     <HandySection
-      title="Fijados"
-      handies={fixedHandies}
-      {onassign}
-      {onpin}
-      {oncontextmenu}
-    />
-
-    <HandySection
-      title={fixedHandies.length > 0 ? 'Otros handies' : 'Lista de Handies'}
-      handies={otherHandies}
+      title="Lista de Handies"
+      handies={filteredHandies}
       {onassign}
       {onpin}
       {oncontextmenu}
@@ -88,8 +76,8 @@
     background: linear-gradient(
       to bottom,
       var(--bg-main) 0%,
-      rgba(8, 8, 10, 0.92) 70%,
-      rgba(8, 8, 10, 0) 100%
+      var(--header-fade) 70%,
+      transparent 100%
     );
   }
 
@@ -101,7 +89,7 @@
   .empty-state {
     padding: 40px 20px;
     text-align: center;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--border-2);
     border-radius: var(--radius-md);
     color: var(--text-secondary);
     font-size: 0.9rem;

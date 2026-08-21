@@ -42,6 +42,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ### Cambiado
 
+- Los handies fijados ya no se agrupan en una sección separada **Fijados**: se muestran junto al resto en la **Lista de Handies**, conservando su color amarillo que los diferencia.
 - La pestaña "Áreas" de Administración reemplaza el formulario inline "Nueva área" por un header "{n} areas" con el botón "Agregar área", que solicita el nombre mediante un diálogo.
 - El toast de Administración flota justo debajo del modal (sin bloquear la interacción) y los mensajes de éxito/error incluyen el dato afectado (ej. `Funcionario "Juan" eliminado con éxito`, `Área "Seguridad" renombrada a "Patrimonio"`).
 - La hora en el historial (interfaz y export CSV) se muestra en formato de 24 horas.

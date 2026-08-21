@@ -50,8 +50,6 @@
       });
     })(),
   );
-  const fixedHandies = $derived(filteredHandies.filter(h => h.fixed));
-  const otherHandies = $derived(filteredHandies.filter(h => !h.fixed));
 
   // Toggle the status filter; clicking the active one again shows all
   function toggleFilter(filter: 'assigned' | 'free') {
@@ -106,8 +104,6 @@
   />
 
   <HandiesGrid
-    {fixedHandies}
-    {otherHandies}
     {filteredHandies}
     bind:filterInput
     onassign={openAssignModal}
@@ -179,8 +175,8 @@
     height: 18px;
     padding: 0 4px;
     border-radius: 4px;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--surface-1);
+    border: 1px solid var(--border-2);
     border-bottom-width: 2px;
     color: var(--text-secondary);
     font-family: var(--font-body);

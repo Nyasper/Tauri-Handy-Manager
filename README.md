@@ -6,7 +6,7 @@ Aplicación de escritorio sencilla para administrar y asignar handies (radios po
 
 - **Lista de handies**: vista en tarjetas del total de handies con su estado (asignado / libre) y dueño actual.
 - **Asignación de handies**: clic sobre un handy abre un modal para asignarlo a un funcionario, reasignarlo o desvincularlo.
-- **Fijar handies (pin)**: cualquier handy asignado puede fijarse (ícono de pin en la tarjeta, o desde el menú contextual) y queda agrupado en la sección **Fijados** en la parte superior. La columna `fixed` de la BD persiste el estado.
+- **Fijar handies (pin)**: cualquier handy asignado puede fijarse (ícono de pin en la tarjeta, o desde el menú contextual) y queda resaltado en color amarillo dentro de la **Lista de Handies**. La columna `fixed` de la BD persiste el estado.
 - **Filtros**:
   - Por nombre o área mediante el buscador.
   - Por estado (Todos / Asignados / Libres) tocando los contadores del encabezado.
@@ -130,7 +130,7 @@ handy-manager/
 │   ├── routes/
 │   │   ├── +layout.svelte      # Layout global: pantallas de carga/error, contexto y modales
 │   │   ├── +layout.ts          # Desactiva SSR (modo SPA)
-│   │   └── +page.svelte        # Vista principal: filtros, secciones Fijados/Otros
+│   │   └── +page.svelte        # Vista principal: filtros y Lista de Handies
 │   └── lib/
 │       ├── app.css             # Tokens de diseño y estilos globales
 │       ├── components/         # Componentes UI (Header, Grid, Card, Modales, etc.)
