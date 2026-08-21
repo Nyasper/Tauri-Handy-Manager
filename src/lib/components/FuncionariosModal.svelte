@@ -94,7 +94,7 @@
       error = 'El nombre del funcionario no puede estar vacío';
       return;
     }
-    if (trimmed.toLowerCase() === owner.name.toLowerCase()) return;
+    if (trimmed === owner.name) return;
 
     clearFeedback();
     try {
@@ -170,7 +170,7 @@
       error = 'El nombre del área no puede estar vacío';
       return;
     }
-    if (trimmed.toLowerCase() === area.name.toLowerCase()) return;
+    if (trimmed === area.name) return;
 
     clearFeedback();
     try {
