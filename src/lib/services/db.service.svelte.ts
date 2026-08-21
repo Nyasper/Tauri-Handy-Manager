@@ -35,8 +35,6 @@ export interface HistoryEntry {
 }
 
 export const HISTORY_PAGE_SIZE_DEFAULT = 500;
-export const HISTORY_PAGE_SIZE_MIN = 50;
-export const HISTORY_PAGE_SIZE_MAX = 5000;
 
 /**
  * Servicio de base de datos SQLite (plugin Tauri) con estado reactivo.
@@ -45,9 +43,9 @@ export const HISTORY_PAGE_SIZE_MAX = 5000;
  * historial con la base de datos y expone operaciones de
  * creación/actualización/eliminación que refrescan el estado tras cada cambio.
  *
- * El historial no se carga completo en memoria: se consulta por páginas
- * (`queryHistory`) y el tamaño de página es configurable por el usuario
- * (`historyPageSize`, persistido en la tabla `settings`).
+ * El historial no se carga completo en memoria: se consulta por páginas de
+ * `HISTORY_PAGE_SIZE_DEFAULT` registros (`queryHistory`), con filtros
+ * opcionales de acción, búsqueda y rango de fechas.
  */
 class HandyDB {
   private db: Database | null = null;
@@ -61,12 +59,11 @@ class HandyDB {
   // Available areas
   areas = $state<Area[]>([]);
 
-  // History is paginated: only totals/counts and the user's page size stay in memory.
+  // History is paginated: only totals/counts stay in memory.
   historyTotal = $state(0);
   historyAssignCount = $state(0);
   historyUnassignCount = $state(0);
   historyEpoch = $state(0);
-  historyPageSize = $state(HISTORY_PAGE_SIZE_DEFAULT);
 
   // Map owner_id -> handy id for quick lookup
   handyByOwner = $derived(
@@ -139,7 +136,7 @@ class HandyDB {
   async refresh() {
     if (!this.db) return;
     try {
-      const [handies, owners, areas, counts, pageSizeSetting] = await Promise.all([
+      const [handies, owners, areas, counts] = await Promise.all([
         this.db.select<Handy[]>(
           `SELECT h.id, h.fixed, h.owner_id, o.name AS owner_name, o.area_id, a.name AS area_name
            FROM handies h
@@ -155,7 +152,6 @@ class HandyDB {
         ),
         this.db.select<Area[]>("SELECT id, name FROM areas ORDER BY id ASC"),
         this.getHistoryCounts(),
-        this.getSetting('history_page_size'),
       ]);
       this.error = null;
       this.handies = handies.map((h) => ({ ...h, fixed: !!h.fixed }));
@@ -164,15 +160,6 @@ class HandyDB {
       this.historyAssignCount = counts.assign;
       this.historyUnassignCount = counts.unassign;
       this.historyTotal = counts.total;
-      const parsedPageSize =
-        pageSizeSetting != null ? parseInt(pageSizeSetting, 10) : NaN;
-      if (
-        Number.isInteger(parsedPageSize) &&
-        parsedPageSize >= HISTORY_PAGE_SIZE_MIN &&
-        parsedPageSize <= HISTORY_PAGE_SIZE_MAX
-      ) {
-        this.historyPageSize = parsedPageSize;
-      }
       this.historyEpoch += 1;
     } catch (e: any) {
       console.error("Error al recargar base de datos:", e);
@@ -582,6 +569,8 @@ class HandyDB {
   private buildHistoryFilter(
     action: HistoryAction | 'all',
     term?: string,
+    from?: string,
+    to?: string,
   ): { clause: string; params: unknown[] } {
     const where: string[] = [];
     const params: unknown[] = [];
@@ -597,6 +586,20 @@ class HandyDB {
       );
       params.push(`%${escaped}%`, `%${escaped}%`);
     }
+    if (from) {
+      const start = new Date(`${from}T00:00:00`);
+      if (!Number.isNaN(start.getTime())) {
+        where.push('timestamp >= ?');
+        params.push(start.toISOString());
+      }
+    }
+    if (to) {
+      const end = new Date(`${to}T23:59:59.999`);
+      if (!Number.isNaN(end.getTime())) {
+        where.push('timestamp <= ?');
+        params.push(end.toISOString());
+      }
+    }
     return { clause: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
   }
 
@@ -604,11 +607,18 @@ class HandyDB {
   async queryHistory(opts: {
     action?: HistoryAction | 'all';
     term?: string;
+    from?: string;
+    to?: string;
     limit: number;
     offset: number;
   }): Promise<{ entries: HistoryEntry[]; total: number }> {
     if (!this.db) throw new Error("La base de datos no está inicializada");
-    const { clause, params } = this.buildHistoryFilter(opts.action ?? 'all', opts.term);
+    const { clause, params } = this.buildHistoryFilter(
+      opts.action ?? 'all',
+      opts.term,
+      opts.from,
+      opts.to,
+    );
     const [{ total }] = await this.db.select<{ total: number }[]>(
       `SELECT COUNT(*) AS total FROM handy_history ${clause}`,
       params,
@@ -627,26 +637,17 @@ class HandyDB {
   async exportHistory(
     action: HistoryAction | 'all',
     term?: string,
+    from?: string,
+    to?: string,
   ): Promise<HistoryEntry[]> {
     if (!this.db) throw new Error("La base de datos no está inicializada");
-    const { clause, params } = this.buildHistoryFilter(action, term);
+    const { clause, params } = this.buildHistoryFilter(action, term, from, to);
     return this.db.select<HistoryEntry[]>(
       `SELECT id, handy_id, action, owner_id, owner_name, timestamp
        FROM handy_history ${clause}
        ORDER BY timestamp DESC, id DESC`,
       params,
     );
-  }
-
-  /** Set and persist the number of history rows loaded per page. */
-  async setHistoryPageSize(n: number) {
-    if (!this.db) throw new Error("La base de datos no está inicializada");
-    if (!Number.isInteger(n)) {
-      throw new Error("La cantidad debe ser un número entero");
-    }
-    const clamped = Math.min(Math.max(n, HISTORY_PAGE_SIZE_MIN), HISTORY_PAGE_SIZE_MAX);
-    this.historyPageSize = clamped;
-    await this.setSetting('history_page_size', String(clamped));
   }
 }
 

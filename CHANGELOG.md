@@ -29,7 +29,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ### Mejorado
 
-- El historial ya no se carga completo: se pagina en la base de datos y se cargan 500 registros por defecto (configurable por el usuario en el modal, persistido entre reinicios), con carga incremental al hacer scroll hasta el final de la lista.
+- El historial ya no se carga completo: se pagina en la base de datos en páginas fijas de 500 registros, con carga incremental al hacer scroll hasta el final de la lista.
+- Nuevo filtro por rango de fechas en el historial: se puede acotar "desde" una fecha, "hasta" otra, o ambas (también aplica al exportar CSV).
 - El botón "Agregar funcionario" del modal de asignación indica el handy a asignar (ej. "y asignar handy #5").
 - Deshabilitar automáticamente el botón "Asignar Handy" cuando la búsqueda no encuentra ningún funcionario ni un nombre nuevo válido.
 - Refactor de accesibilidad de las tarjetas de handy: la tarjeta es un `<button>` nativo y el botón de fijar queda fuera de ella (HTML válido, sin interactivos anidados).

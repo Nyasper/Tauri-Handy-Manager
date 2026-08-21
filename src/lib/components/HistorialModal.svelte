@@ -2,8 +2,7 @@
   import {
     handyDB,
     historyToCsv,
-    HISTORY_PAGE_SIZE_MIN,
-    HISTORY_PAGE_SIZE_MAX,
+    HISTORY_PAGE_SIZE_DEFAULT,
     type HistoryEntry,
   } from '$lib/services/db.service.svelte';
   import { save } from '@tauri-apps/plugin-dialog';
@@ -30,10 +29,11 @@
   let loading = $state(true);
   let loadingMore = $state(false);
   let debouncedSearch = $state('');
+  let fromDate = $state('');
+  let toDate = $state('');
   // Plain counter (not reactive): guards against stale responses without
   // invalidating the $effect that triggers reloads.
   let queryVersion = 0;
-  let pageSizeInput = $state(String(handyDB.historyPageSize));
 
   const hasMore = $derived(entries.length < total);
 
@@ -60,7 +60,9 @@
       const result = await handyDB.queryHistory({
         action: actionFilter,
         term: debouncedSearch,
-        limit: handyDB.historyPageSize,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+        limit: HISTORY_PAGE_SIZE_DEFAULT,
         offset: 0,
       });
       if (version !== queryVersion) return;
@@ -82,7 +84,9 @@
       const result = await handyDB.queryHistory({
         action: actionFilter,
         term: debouncedSearch,
-        limit: handyDB.historyPageSize,
+        from: fromDate || undefined,
+        to: toDate || undefined,
+        limit: HISTORY_PAGE_SIZE_DEFAULT,
         offset: entries.length,
       });
       if (version !== queryVersion) return;
@@ -109,8 +113,9 @@
   $effect(() => {
     debouncedSearch;
     actionFilter;
+    fromDate;
+    toDate;
     handyDB.historyEpoch;
-    handyDB.historyPageSize;
     void reload();
   });
 
@@ -129,18 +134,9 @@
     return () => observer.disconnect();
   };
 
-  async function applyPageSize() {
-    const n = parseInt(pageSizeInput, 10);
-    if (
-      !Number.isInteger(n) ||
-      n < HISTORY_PAGE_SIZE_MIN ||
-      n > HISTORY_PAGE_SIZE_MAX
-    ) {
-      pageSizeInput = String(handyDB.historyPageSize);
-      return;
-    }
-    await handyDB.setHistoryPageSize(n);
-    pageSizeInput = String(handyDB.historyPageSize);
+  function clearDates() {
+    fromDate = '';
+    toDate = '';
   }
 
   async function exportCsv() {
@@ -148,7 +144,12 @@
     exportSuccess = null;
     let all: HistoryEntry[];
     try {
-      all = await handyDB.exportHistory(actionFilter, searchInput);
+      all = await handyDB.exportHistory(
+        actionFilter,
+        searchInput,
+        fromDate || undefined,
+        toDate || undefined,
+      );
     } catch (err: any) {
       exportError = err.message || 'Error al consultar el historial';
       return;
@@ -191,6 +192,15 @@
         placeholder="Buscar por funcionario o # de handy..."
       />
       <div class="history-stats">
+        <span class="history-count" title="Registros cargados vs. total de coincidencias">
+          {#if loading && entries.length === 0}
+            Cargando...
+          {:else if total === 0}
+            0 registros
+          {:else}
+            Mostrando {entries.length} de {total}
+          {/if}
+        </span>
         <button
           type="button"
           class="stat-chip"
@@ -209,17 +219,36 @@
         >
           Desvinculados <span>{handyDB.historyUnassignCount}</span>
         </button>
-        <div class="page-size-group" title="Cantidad de registros por carga">
-          <label for="history-page-size">Por página</label>
+        <div class="date-range-group">
+          <label for="history-from">Desde</label>
           <input
-            id="history-page-size"
-            type="number"
-            min={HISTORY_PAGE_SIZE_MIN}
-            max={HISTORY_PAGE_SIZE_MAX}
-            step="50"
-            bind:value={pageSizeInput}
-            onchange={applyPageSize}
+            id="history-from"
+            type="date"
+            bind:value={fromDate}
+            max={toDate || undefined}
+            title="Desde esta fecha"
           />
+          <span class="date-sep" aria-hidden="true">→</span>
+          <label for="history-to">Hasta</label>
+          <input
+            id="history-to"
+            type="date"
+            bind:value={toDate}
+            min={fromDate || undefined}
+            title="Hasta esta fecha"
+          />
+          <button
+            type="button"
+            class="date-clear"
+            onclick={clearDates}
+            title="Limpiar filtro de fechas"
+            disabled={!fromDate && !toDate}
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
         </div>
         <button
           type="button"
@@ -293,13 +322,11 @@
             {#if loadingMore}
               Cargando más...
             {:else}
-              Mostrando {entries.length} registros de {total} · scrolleá para cargar más
+              Scrolleá para cargar más registros
             {/if}
           </div>
         {:else}
-          <div class="history-load-more end">
-            Mostrando los {entries.length} registros ({total} en total)
-          </div>
+          <div class="history-load-more end">Fin del historial</div>
         {/if}
 
         <div {@attach watchInfiniteScroll} class="history-sentinel" aria-hidden="true"></div>
@@ -362,7 +389,30 @@
     justify-content: flex-end;
   }
 
-  .page-size-group {
+  .history-count {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    white-space: nowrap;
+  }
+
+  .history-count:not(:empty)::before {
+    content: '';
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: var(--color-accent);
+    flex-shrink: 0;
+  }
+
+  .date-range-group {
     display: flex;
     align-items: center;
     gap: 8px;
@@ -373,16 +423,16 @@
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
+    flex-wrap: wrap;
   }
 
-  .page-size-group label {
+  .date-range-group label {
     color: var(--text-muted);
     font-size: 0.8rem;
     white-space: nowrap;
   }
 
-  .page-size-group input {
-    width: 74px;
+  .date-range-group input[type='date'] {
     background: rgba(0, 0, 0, 0.3);
     border: 1px solid rgba(255, 255, 255, 0.12);
     color: var(--text-primary);
@@ -390,11 +440,46 @@
     border-radius: 6px;
     font-family: var(--font-body);
     font-size: 0.85rem;
+    color-scheme: dark;
   }
 
-  .page-size-group input:focus {
+  .date-range-group input[type='date']:focus {
     outline: 2px solid var(--color-accent-border);
     border-color: var(--color-accent);
+  }
+
+  .date-sep {
+    color: var(--text-muted);
+    font-size: 0.85rem;
+  }
+
+  .date-clear {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: transparent;
+    border: none;
+    border-radius: 50%;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .date-clear svg {
+    width: 13px;
+    height: 13px;
+  }
+
+  .date-clear:hover:not(:disabled) {
+    background: rgba(244, 63, 94, 0.15);
+    color: var(--color-danger);
+  }
+
+  .date-clear:disabled {
+    opacity: 0.35;
+    cursor: default;
   }
 
   .stat-chip {
@@ -627,13 +712,14 @@
     .stat-chip,
     .export-btn,
     .backup-btn,
-    .delete-btn {
+    .delete-btn,
+    .history-count {
       flex: 1;
       justify-content: center;
       white-space: nowrap;
     }
 
-    .page-size-group {
+    .date-range-group {
       flex: 1;
       justify-content: center;
     }
