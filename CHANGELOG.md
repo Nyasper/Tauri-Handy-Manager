@@ -11,6 +11,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 - Al asignar un handy, si el nombre escrito no existe, el botón principal crea el funcionario y lo asigna automáticamente en un solo paso.
 - En el modal de asignación, al seleccionar un funcionario distinto al actual, aparece el botón **Reasignar Handy** (en lugar del genérico "Guardar Cambios").
 - La opción "Agregar funcionario y asignar handy" crea el funcionario, lo asigna y cierra el modal automáticamente.
+- Botón discreto **← Todos** junto al buscador del grid: aparece cuando hay algún filtro activo (por estado o por texto) y al pulsarlo cancela el filtrado y vuelve a mostrar todos los handies.
+- La tarjeta **Total** del header se vuelve clickeable cuando hay un filtro aplicado y cancela el filtrado (igual que **← Todos**); sin filtro permanece estática.
 
 ### Corregido
 
@@ -39,6 +41,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 - Eliminar imports con barras escapadas (`$lib\/...`) y extraer lookups repetidos de `handyByOwner` en las listas de administración.
 - El buscador de funcionarios en Administración queda fijo (sticky) junto a las pestañas al scrollear el listado.
 - Los toasts de todos los modals (Administración, Historial, Seguridad, Copia de seguridad y Asignación) se auto-descartan a los 3 segundos.
+- Las tarjetas de handy pasan a un formato horizontal compacto: el número a la izquierda, la información (Handy + dueño/área o Libre) al centro y un LED de estado a la derecha, reduciendo el espacio vertical que ocupaba el diseño anterior tipo radio.
 
 ### Cambiado
 

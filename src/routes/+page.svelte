@@ -56,6 +56,15 @@
     activeFilter = activeFilter === filter ? 'all' : filter;
   }
 
+  // True when any filter (status or text) is active
+  const hasActiveFilter = $derived(activeFilter !== 'all' || filterInput.trim() !== '');
+
+  // Clear all filters and show the full list
+  function clearFilters() {
+    activeFilter = 'all';
+    filterInput = '';
+  }
+
   // Open the assign modal for a handy
   function openAssignModal(id: number) {
     assignHandyId = id;
@@ -95,13 +104,17 @@
     {assignedCount}
     {freeCount}
     {activeFilter}
+    {hasActiveFilter}
     onfilter={toggleFilter}
+    onclear={clearFilters}
     onfuncionarios={() => (showFuncionariosModal = true)}
     onhistorial={() => (showHistorialModal = true)}
   />
 
   <HandiesGrid
     {filteredHandies}
+    {hasActiveFilter}
+    onclear={clearFilters}
     bind:filterInput
     onassign={openAssignModal}
     onpin={(id) => handyDB.toggleFixed(id)}

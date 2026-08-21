@@ -7,7 +7,9 @@
     assignedCount,
     freeCount,
     activeFilter,
+    hasActiveFilter = false,
     onfilter,
+    onclear,
     onfuncionarios,
     onhistorial,
   }: {
@@ -15,7 +17,9 @@
     assignedCount: number;
     freeCount: number;
     activeFilter: 'all' | 'assigned' | 'free';
+    hasActiveFilter?: boolean;
     onfilter: (filter: 'assigned' | 'free') => void;
+    onclear: () => void;
     onfuncionarios: () => void;
     onhistorial: () => void;
   } = $props();
@@ -32,10 +36,23 @@
     <h1>HANDY MANAGER</h1>
   </div>
   <div class="stats-bar">
-    <div class="stat-badge">
-      <span class="stat-label">Total</span>
-      <span class="stat-value">{totalCount}</span>
-    </div>
+    {#if hasActiveFilter}
+      <button
+        type="button"
+        class="stat-badge total-clear"
+        {@attach shortcuts.rovingFocus('header')}
+        onclick={onclear}
+        title="Quitar filtros y mostrar todos"
+      >
+        <span class="stat-label">Total</span>
+        <span class="stat-value">{totalCount}</span>
+      </button>
+    {:else}
+      <div class="stat-badge">
+        <span class="stat-label">Total</span>
+        <span class="stat-value">{totalCount}</span>
+      </div>
+    {/if}
     <button
       type="button"
       class="stat-badge success"
@@ -184,6 +201,12 @@
     cursor: pointer;
     font-family: var(--font-body);
     color: var(--text-primary);
+  }
+
+  .stat-badge.total-clear {
+    border-color: var(--color-accent-border);
+    background: var(--surface-hover);
+    box-shadow: 0 0 12px var(--color-accent-glow);
   }
 
   .stat-badge.success.active {
