@@ -16,6 +16,23 @@
     success = null;
   }
 
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Auto-dismiss the toast after 3 seconds
+  $effect(() => {
+    if (error || success) {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => {
+        clearFeedback();
+        feedbackTimer = null;
+      }, 3000);
+    }
+    return () => {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    };
+  });
+
   function todayStamp(): string {
     const d = new Date();
     const pad = (n: number) => String(n).padStart(2, '0');

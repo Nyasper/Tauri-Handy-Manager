@@ -70,6 +70,23 @@
     actionSuccess = null;
   }
 
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Auto-dismiss the toast after 3 seconds
+  $effect(() => {
+    if (actionError || actionSuccess) {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => {
+        clearFeedback();
+        feedbackTimer = null;
+      }, 3000);
+    }
+    return () => {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    };
+  });
+
   function selectOwner(id: number) {
     selectedOwnerId = id;
     clearFeedback();

@@ -35,9 +35,13 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 - Deshabilitar automáticamente el botón "Asignar Handy" cuando la búsqueda no encuentra ningún funcionario ni un nombre nuevo válido.
 - Refactor de accesibilidad de las tarjetas de handy: la tarjeta es un `<button>` nativo y el botón de fijar queda fuera de ella (HTML válido, sin interactivos anidados).
 - Eliminar imports con barras escapadas (`$lib\/...`) y extraer lookups repetidos de `handyByOwner` en las listas de administración.
+- El buscador de funcionarios en Administración queda fijo (sticky) junto a las pestañas al scrollear el listado.
+- Los toasts de todos los modals (Administración, Historial, Seguridad, Copia de seguridad y Asignación) se auto-descartan a los 3 segundos.
 
 ### Cambiado
 
+- La pestaña "Áreas" de Administración reemplaza el formulario inline "Nueva área" por un header "{n} areas" con el botón "Agregar área", que solicita el nombre mediante un diálogo.
+- El toast de Administración flota justo debajo del modal (sin bloquear la interacción) y los mensajes de éxito/error incluyen el dato afectado (ej. `Funcionario "Juan" eliminado con éxito`, `Área "Seguridad" renombrada a "Patrimonio"`).
 - La hora en el historial (interfaz y export CSV) se muestra en formato de 24 horas.
 - La pantalla de inicio usa un layout de app-shell: el header y los atajos quedan fijos y la cuadrícula de handies scrollea internamente, con el campo de búsqueda fijo (sticky) arriba del área scrolleable.
 - Los modals ahora mantienen su header (título y botón cerrar) siempre visible mientras el contenido scrollea debajo; las barras de Administración (pestañas), Historial (búsqueda/filtros/exportar) y Asignar Handy (búsqueda) quedan fijas al scrollear.

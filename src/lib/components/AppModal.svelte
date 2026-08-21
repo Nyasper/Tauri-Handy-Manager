@@ -65,11 +65,12 @@
   }
 
   .modal-panel {
+    position: relative;
     width: 100%;
     max-height: 85vh;
     display: flex;
     flex-direction: column;
-    overflow: hidden;
+    overflow: visible;
     border-radius: var(--radius-lg);
     background: rgba(13, 14, 18, 0.92);
     border: 1px solid rgba(255, 255, 255, 0.1);

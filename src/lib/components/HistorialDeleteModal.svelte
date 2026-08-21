@@ -32,6 +32,23 @@
     success = null;
   }
 
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Auto-dismiss the toast after 3 seconds
+  $effect(() => {
+    if (error || success) {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => {
+        clearFeedback();
+        feedbackTimer = null;
+      }, 3000);
+    }
+    return () => {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    };
+  });
+
   function parseCount(value: string): number {
     const n = parseInt(value, 10);
     if (!Number.isInteger(n) || n <= 0) return NaN;

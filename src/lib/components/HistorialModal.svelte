@@ -23,6 +23,28 @@
   let exportError = $state<string | null>(null);
   let exportSuccess = $state<string | null>(null);
 
+  function clearFeedback() {
+    exportError = null;
+    exportSuccess = null;
+  }
+
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Auto-dismiss the toast after 3 seconds
+  $effect(() => {
+    if (exportError || exportSuccess) {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => {
+        clearFeedback();
+        feedbackTimer = null;
+      }, 3000);
+    }
+    return () => {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    };
+  });
+
   // Paginated history loaded from the database (newest first)
   let entries = $state<HistoryEntry[]>([]);
   let total = $state(0);

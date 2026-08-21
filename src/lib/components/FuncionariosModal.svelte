@@ -19,9 +19,6 @@
   let areaEditOwnerId = $state<number | null>(null);
   let pendingAreaId = $state<number | null>(null);
 
-  // Area create state
-  let areaName = $state('');
-
   // Owners filtered by name or area
   const filteredOwners = $derived(
     (() => {
@@ -63,12 +60,28 @@
     success = null;
   }
 
+  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
+
+  // Auto-dismiss the toast after 3 seconds
+  $effect(() => {
+    if (error || success) {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = setTimeout(() => {
+        clearFeedback();
+        feedbackTimer = null;
+      }, 3000);
+    }
+    return () => {
+      if (feedbackTimer) clearTimeout(feedbackTimer);
+      feedbackTimer = null;
+    };
+  });
+
   function setActiveTab(tab: 'funcionarios' | 'areas' | 'handies') {
     activeTab = tab;
     clearFeedback();
     searchInput = '';
     areaEditOwnerId = null;
-    areaName = '';
   }
 
   async function addOwner() {
@@ -81,7 +94,7 @@
       success = `Funcionario "${name}" creado con éxito`;
       searchInput = '';
     } catch (err: any) {
-      error = err.message || 'Error al crear el funcionario';
+      error = err.message || `Error al crear el funcionario "${name}"`;
     }
   }
 
@@ -101,12 +114,18 @@
     }
     if (trimmed === owner.name) return;
 
+    const areaId = owner.area_id ?? handyDB.defaultAreaId;
+    if (areaId == null) {
+      error = 'No hay áreas disponibles';
+      return;
+    }
+
     clearFeedback();
     try {
-      await handyDB.updateOwner(owner.id, trimmed, owner.area_id ?? handyDB.defaultAreaId ?? 0);
-      success = 'Funcionario actualizado con éxito';
+      await handyDB.updateOwner(owner.id, trimmed, areaId);
+      success = `Funcionario "${owner.name}" renombrado a "${trimmed}"`;
     } catch (err: any) {
-      error = err.message || 'Error al actualizar el funcionario';
+      error = err.message || `Error al actualizar el funcionario "${owner.name}"`;
     }
   }
 
@@ -127,12 +146,13 @@
       return;
     }
     clearFeedback();
+    const area = handyDB.areas.find((a) => a.id === pendingAreaId);
     try {
       await handyDB.updateOwnerArea(owner.id, pendingAreaId);
-      success = 'Área del funcionario actualizada con éxito';
+      success = `Área de "${owner.name}" cambiada a "${area?.name}"`;
       cancelAreaEdit();
     } catch (err: any) {
-      error = err.message || 'Error al actualizar el área del funcionario';
+      error = err.message || `Error al actualizar el área de "${owner.name}"`;
     }
   }
 
@@ -155,9 +175,9 @@
     try {
       await handyDB.deleteOwner(id);
       if (areaEditOwnerId === id) cancelAreaEdit();
-      success = 'Funcionario eliminado con éxito';
+      success = `Funcionario "${owner?.name}" eliminado con éxito`;
     } catch (err: any) {
-      error = err.message || 'Error al eliminar el funcionario';
+      error = err.message || `Error al eliminar el funcionario "${owner?.name}"`;
     }
   }
 
@@ -180,22 +200,34 @@
     clearFeedback();
     try {
       await handyDB.updateArea(area.id, trimmed);
-      success = 'Área actualizada con éxito';
+      success = `Área "${area.name}" renombrada a "${trimmed}"`;
     } catch (err: any) {
-      error = err.message || 'Error al actualizar el área';
+      error = err.message || `Error al actualizar el área "${area.name}"`;
     }
   }
 
-  async function handleAreaSubmit(e: Event) {
-    e.preventDefault();
+  async function addArea() {
     clearFeedback();
 
+    const name = await modalService.prompt({
+      title: 'Nueva área',
+      message: 'Ingresa el nombre del área',
+      defaultValue: '',
+      confirmLabel: 'Crear',
+    });
+    if (name == null) return;
+
+    const trimmed = name.trim();
+    if (!trimmed) {
+      error = 'El nombre del área no puede estar vacío';
+      return;
+    }
+
     try {
-      await handyDB.createArea(areaName);
-      success = 'Área creada con éxito';
-      areaName = '';
+      await handyDB.createArea(trimmed);
+      success = `Área "${trimmed}" creada con éxito`;
     } catch (err: any) {
-      error = err.message || 'Error al guardar el área';
+      error = err.message || `Error al crear el área "${trimmed}"`;
     }
   }
 
@@ -213,9 +245,9 @@
 
     try {
       await handyDB.deleteArea(id);
-      success = 'Área eliminada con éxito';
+      success = `Área "${area.name}" eliminada con éxito`;
     } catch (err: any) {
-      error = err.message || 'Error al eliminar el área';
+      error = err.message || `Error al eliminar el área "${area.name}"`;
     }
   }
 
@@ -252,13 +284,14 @@
       await handyDB.deleteHandy(id);
       success = `Handy #${id} eliminado con éxito`;
     } catch (err: any) {
-      error = err.message || 'Error al eliminar el handy';
+      error = err.message || `Error al eliminar el Handy #${id}`;
     }
   }
 </script>
 
 <AppModal title="Administración" onclose={onclose}>
-  <div class="tabs" data-nav-section="tabs">
+  <div class="admin-toolbar">
+    <div class="tabs" data-nav-section="tabs">
       <button
         class="tab-btn"
         class:active={activeTab === 'funcionarios'}
@@ -283,16 +316,19 @@
     </div>
 
     {#if activeTab === 'funcionarios'}
-      <div class="modal-body">
-        <div data-nav-section="search">
-          <SearchInput
-            id="owner-search"
-            bind:value={searchInput}
-            placeholder="Buscar por nombre o área..."
-          />
-        </div>
+      <div class="admin-search" data-nav-section="search">
+        <SearchInput
+          id="owner-search"
+          bind:value={searchInput}
+          placeholder="Buscar por nombre o área..."
+        />
+      </div>
+    {/if}
+  </div>
 
-        <div class="funcionarios-list" data-nav-section="list">
+  {#if activeTab === 'funcionarios'}
+    <div class="modal-body">
+      <div class="funcionarios-list" data-nav-section="list">
           {#each filteredOwners as owner (owner.id)}
             {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
             <div class="row-item">
@@ -355,11 +391,23 @@
       </div>
     {:else if activeTab === 'areas'}
       <div class="modal-body">
+        <div class="list-header" data-nav-section="header">
+          <span class="row-muted">{handyDB.areas.length} areas</span>
+          <button type="button" class="btn-primary btn-sm" onclick={addArea}>
+            Agregar área
+          </button>
+        </div>
         <div class="funcionarios-list" data-nav-section="list">
           {#each handyDB.areas as area (area.id)}
+            {@const isDefaultArea = area.name.trim().toLowerCase() === 'otro'}
             <div class="row-item">
               <div class="row-info">
-                <span class="row-name">{area.name}</span>
+                <span class="row-name">
+                  {area.name}
+                  {#if isDefaultArea}
+                    <span class="default-badge">Por defecto</span>
+                  {/if}
+                </span>
                 <span class="row-meta">
                   <span class="row-muted">
                     {(ownerCountByArea.get(area.id) ?? 0)} funcionarios
@@ -367,35 +415,28 @@
                 </span>
               </div>
               <div class="row-actions">
-                <button type="button" class="btn-secondary btn-sm" onclick={() => editArea(area)}>
+                <button
+                  type="button"
+                  class="btn-secondary btn-sm"
+                  disabled={isDefaultArea}
+                  title={isDefaultArea ? 'Área por defecto: no se puede modificar' : 'Renombrar área'}
+                  onclick={() => editArea(area)}
+                >
                   Renombrar
                 </button>
-                <button type="button" class="btn-danger btn-sm" onclick={() => handleDeleteArea(area.id)}>
+                <button
+                  type="button"
+                  class="btn-danger btn-sm"
+                  disabled={isDefaultArea}
+                  title={isDefaultArea ? 'Área por defecto: no se puede eliminar' : 'Eliminar área'}
+                  onclick={() => handleDeleteArea(area.id)}
+                >
                   Eliminar
                 </button>
               </div>
             </div>
           {/each}
         </div>
-
-        <form onsubmit={handleAreaSubmit} class="modal-form" data-nav-section="form">
-          <h4>Nueva área</h4>
-          <div class="form-group">
-            <label for="modal-area-name">Nombre del área</label>
-            <input
-              type="text"
-              id="modal-area-name"
-              bind:value={areaName}
-              placeholder="Ej. Seguridad"
-              autocomplete="off"
-            />
-          </div>
-          <div class="form-actions">
-            <button type="submit" class="btn-primary btn-sm">
-              Crear área
-            </button>
-          </div>
-        </form>
       </div>
     {:else}
       <div class="modal-body">
@@ -436,27 +477,34 @@
     {/if}
 
     {#if error}
-      <Alert type="danger" icon={false} class="modal-alert">{error}</Alert>
+      <Alert type="danger" icon={false} class="admin-alert">{error}</Alert>
     {/if}
     {#if success}
-      <Alert type="success" icon={false} class="modal-alert">{success}</Alert>
+      <Alert type="success" icon={false} class="admin-alert">{success}</Alert>
     {/if}
 </AppModal>
 
 <style>
-  .tabs {
+  .admin-toolbar {
     position: sticky;
     top: 0;
     z-index: 10;
-    display: flex;
-    gap: 8px;
-    padding: 16px 24px 10px;
+    padding: 16px 24px 12px;
     background: linear-gradient(
       to bottom,
       rgba(13, 14, 18, 0.97) 0%,
       rgba(13, 14, 18, 0.97) 72%,
       rgba(13, 14, 18, 0) 100%
     );
+  }
+
+  .tabs {
+    display: flex;
+    gap: 8px;
+  }
+
+  .admin-search {
+    margin-top: 16px;
   }
 
   .tab-btn {
@@ -529,6 +577,21 @@
     font-size: 0.9rem;
     font-weight: 500;
     color: var(--text-primary);
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    flex-wrap: wrap;
+  }
+
+  .default-badge {
+    font-size: 0.7rem;
+    font-weight: 600;
+    color: var(--color-accent);
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid var(--color-accent-border);
+    border-radius: 999px;
+    padding: 2px 8px;
+    white-space: nowrap;
   }
 
   .row-meta {
@@ -563,44 +626,35 @@
     border-radius: var(--radius-sm);
   }
 
-  .modal-form {
-    display: flex;
-    flex-direction: column;
-    gap: 12px;
-    padding-top: 16px;
-    border-top: 1px solid rgba(255, 255, 255, 0.06);
-  }
-
-  .modal-form h4 {
-    font-size: 0.95rem;
-    color: var(--text-primary);
-  }
-
-  .form-group {
-    display: flex;
-    flex-direction: column;
-    gap: 6px;
-  }
-
-  .form-group label {
-    font-size: 0.8rem;
-    font-weight: 500;
-    color: var(--text-secondary);
-  }
-
   .form-actions {
     display: flex;
     gap: 8px;
   }
 
-  :global(.modal-alert) {
-    margin: 0 24px 20px;
+  :global(.admin-alert) {
+    position: absolute;
+    top: calc(100% + 12px);
+    left: 24px;
+    right: 24px;
+    z-index: 30;
+    margin: 0;
+    pointer-events: none;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    -webkit-backdrop-filter: blur(10px);
   }
 
   @media (max-width: 480px) {
+    .admin-toolbar {
+      padding: 12px 16px 12px;
+    }
+
     .tabs {
       gap: 6px;
-      padding: 12px 16px 10px;
+    }
+
+    .admin-search {
+      margin-top: 12px;
     }
 
     .tab-btn {
@@ -635,8 +689,9 @@
       flex-wrap: wrap;
     }
 
-    :global(.modal-alert) {
-      margin: 0 16px 14px;
+    :global(.admin-alert) {
+      left: 16px;
+      right: 16px;
     }
   }
 </style>
