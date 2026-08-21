@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import type { Attachment } from 'svelte/attachments';
 import { contextMenu } from './context-menu.service.svelte';
 import { handyDB } from './db.service.svelte';
+import { theme } from './theme.service.svelte';
 
 export interface ModalLayer {
   dismiss: () => void;
@@ -488,6 +489,11 @@ class ShortcutsService {
       if (key === 'h' && this.actions) {
         e.preventDefault();
         this.actions.openHistory();
+        return;
+      }
+      if (key === 't') {
+        e.preventDefault();
+        theme.toggle();
         return;
       }
       if (e.key >= '0' && e.key <= '9') {

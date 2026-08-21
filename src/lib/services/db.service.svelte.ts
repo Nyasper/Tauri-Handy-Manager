@@ -361,6 +361,12 @@ class HandyDB {
 
     if (handy?.owner_id === ownerId) return;
 
+    if (handy?.fixed) {
+      throw new Error(
+        "No se puede reasignar un handy fijado. Desfíjalo primero.",
+      );
+    }
+
     await this.db.execute("UPDATE handies SET owner_id = ? WHERE id = ?", [
       ownerId,
       id,
@@ -401,6 +407,11 @@ class HandyDB {
     }
     try {
       const handy = this.handies.find((h) => h.id === id);
+      if (handy?.fixed) {
+        throw new Error(
+          "No se puede desvincular un handy fijado. Desfíjalo primero.",
+        );
+      }
       await this.db.execute("UPDATE handies SET owner_id = NULL, fixed = 0 WHERE id = ?", [
         id,
       ]);

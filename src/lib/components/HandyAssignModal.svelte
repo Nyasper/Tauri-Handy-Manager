@@ -146,6 +146,17 @@
       actionError = err.message || 'Error al desvincular el handy';
     }
   }
+
+  async function handleUnpin() {
+    if (!handy) return;
+    clearFeedback();
+
+    try {
+      await handyDB.toggleFixed(handy.id);
+    } catch (err: any) {
+      actionError = err.message || 'Error al desfijar el handy';
+    }
+  }
 </script>
 
 {#if handy}
@@ -166,78 +177,89 @@
         {/if}
       </div>
 
-      <form onsubmit={handleSave} class="assignment-form">
-        <div class="form-group">
-          <label for="assign-owner-search">Funcionario</label>
-          <div class="assign-search" data-nav-section="search">
-            <SearchInput
-              id="assign-owner-search"
-              bind:value={searchInput}
-              placeholder="Buscar por nombre o área..."
-            />
-          </div>
-
-          <div class="owners-list" data-nav-section="list">
-            {#each filteredOwners as owner (owner.id)}
-              {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
-              <button
-                type="button"
-                class="owner-item"
-                class:selected={selectedOwnerId === owner.id}
-                onclick={() => selectOwner(owner.id)}
-              >
-                <span class="owner-name">{owner.name}</span>
-                <span class="owner-meta">
-                  {#if owner.area_name}
-                    <span class="area-badge">{owner.area_name}</span>
-                  {/if}
-                  {#if ownerHandyId != null}
-                    <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
-                  {/if}
-                </span>
-              </button>
-            {/each}
-
-            {#if canAddNew}
-              <AddOption
-                label="Agregar funcionario"
-                text={searchInput.trim()}
-                suffix={` y asignar handy #${handy.id}`}
-                onclick={addNewOwner}
+      {#if handy.fixed}
+        <div class="fixed-banner">
+          <p>
+            Este handy está <strong>fijado</strong>. Para desvincularlo o reasignarlo, desfíjalo primero.
+          </p>
+          <button type="button" class="btn-secondary" onclick={handleUnpin}>
+            Desfijar
+          </button>
+        </div>
+      {:else}
+        <form onsubmit={handleSave} class="assignment-form">
+          <div class="form-group">
+            <label for="assign-owner-search">Funcionario</label>
+            <div class="assign-search" data-nav-section="search">
+              <SearchInput
+                id="assign-owner-search"
+                bind:value={searchInput}
+                placeholder="Buscar por nombre o área..."
               />
-            {/if}
+            </div>
+
+            <div class="owners-list" data-nav-section="list">
+              {#each filteredOwners as owner (owner.id)}
+                {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
+                <button
+                  type="button"
+                  class="owner-item"
+                  class:selected={selectedOwnerId === owner.id}
+                  onclick={() => selectOwner(owner.id)}
+                >
+                  <span class="owner-name">{owner.name}</span>
+                  <span class="owner-meta">
+                    {#if owner.area_name}
+                      <span class="area-badge">{owner.area_name}</span>
+                    {/if}
+                    {#if ownerHandyId != null}
+                      <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
+                    {/if}
+                  </span>
+                </button>
+              {/each}
+
+              {#if canAddNew}
+                <AddOption
+                  label="Agregar funcionario"
+                  text={searchInput.trim()}
+                  suffix={` y asignar handy #${handy.id}`}
+                  onclick={addNewOwner}
+                />
+              {/if}
+            </div>
+
+            <span class="helper-text">
+              Selecciona una persona de la lista o escribe un nombre nuevo: al confirmar se creará y asignará automáticamente. El área se asigna desde "Administración".
+            </span>
           </div>
 
-          <span class="helper-text">
-            Selecciona una persona de la lista o escribe un nombre nuevo: al confirmar se creará y asignará automáticamente. El área se asigna desde "Administración".
-          </span>
-        </div>
+          {#if actionError}
+            <Alert type="danger">{actionError}</Alert>
+          {/if}
 
-        {#if actionError}
-          <Alert type="danger">{actionError}</Alert>
-        {/if}
+          {#if actionSuccess}
+            <Alert type="success">{actionSuccess}</Alert>
+          {/if}
 
-        {#if actionSuccess}
-          <Alert type="success">{actionSuccess}</Alert>
-        {/if}
-
-        <div class="action-buttons" data-nav-section="actions">
-          {#if handy.owner_id}
-            {#if isReassign}
-              <button type="submit" class="btn-primary" disabled={!canSubmit}>
-                Reasignar Handy
+          <div class="action-buttons" data-nav-section="actions">
+            {#if handy.owner_id}
+              {#if isReassign}
+                <button type="submit" class="btn-primary" disabled={!canSubmit}>
+                  Reasignar Handy
+                </button>
+              {/if}
+              <button type="button" class="btn-danger" onclick={handleUnassign}>
+                Desvincular
+              </button>
+            {:else}
+              <button type="submit" class="btn-primary w-full" disabled={!canSubmit}>
+                Asignar Handy
               </button>
             {/if}
-            <button type="button" class="btn-danger" onclick={handleUnassign}>
-              Desvincular
-            </button>
-          {:else}
-            <button type="submit" class="btn-primary w-full" disabled={!canSubmit}>
-              Asignar Handy
-            </button>
-          {/if}
-        </div>
-      </form>
+          </div>
+        </form>
+      {/if}
     </div>
   </AppModal>
 {/if}
@@ -287,6 +309,35 @@
 
   .text-muted {
     color: var(--text-muted);
+  }
+
+  .fixed-banner {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 12px 16px;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.35);
+    border-radius: var(--radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+  }
+
+  .fixed-banner p {
+    flex: 1;
+    min-width: 0;
+    line-height: 1.4;
+  }
+
+  .fixed-banner strong {
+    color: #fbbf24;
+  }
+
+  .fixed-banner .btn-secondary {
+    flex-shrink: 0;
+    padding: 8px 14px;
+    font-size: 0.85rem;
   }
 
   .assignment-form {
@@ -403,6 +454,15 @@
     }
 
     .action-buttons button {
+      width: 100%;
+    }
+
+    .fixed-banner {
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .fixed-banner .btn-secondary {
       width: 100%;
     }
   }

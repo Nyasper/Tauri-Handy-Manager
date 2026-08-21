@@ -53,6 +53,7 @@
     flex: 1;
     min-height: 0;
     overflow-y: auto;
+    padding-left: 10px;
     padding-right: 10px;
     padding-bottom: 12px;
   }

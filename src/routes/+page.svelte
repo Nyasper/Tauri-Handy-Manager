@@ -74,11 +74,13 @@
         {
           label: 'Revocar Asignación',
           action: () => handyDB.unassign(handy.id),
+          disabled: handy.fixed,
         },
         { isSeparator: true },
         {
           label: 'Reasignar handy',
           action: () => openAssignModal(handy.id),
+          disabled: handy.fixed,
         },
         { isSeparator: true },
         {
@@ -112,13 +114,10 @@
   />
 
   <footer class="shortcut-hints">
-    <span class="hint"><kbd>←</kbd><kbd>→</kbd><kbd>↑</kbd><kbd>↓</kbd> Navegar</span>
-    <span class="hint"><kbd>Tab</kbd>/<kbd>Shift</kbd>+<kbd>Tab</kbd> Zonas</span>
-    <span class="hint"><kbd>Enter</kbd> Aceptar</span>
-    <span class="hint"><kbd>Esc</kbd>/<kbd>Supr</kbd> Salir / Volver</span>
     <span class="hint"><kbd>1</kbd>-<kbd>0</kbd> / <kbd>Ctrl</kbd>+<kbd>1</kbd>-<kbd>0</kbd> Handy 1-20</span>
-    <span class="hint"><kbd>Ctrl</kbd>+<kbd>O</kbd> Administración</span>
     <span class="hint"><kbd>Ctrl</kbd>+<kbd>H</kbd> Historial</span>
+    <span class="hint"><kbd>Ctrl</kbd>+<kbd>O</kbd> Administración</span>
+    <span class="hint"><kbd>Ctrl</kbd>+<kbd>T</kbd> Modo claro/oscuro</span>
   </footer>
 </div>
 
