@@ -107,8 +107,8 @@
     min-width: 200px;
     max-width: 280px;
     padding: 6px;
-    background: rgba(13, 14, 18, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--modal-bg);
+    border: 1px solid var(--border-2);
     border-radius: var(--radius-sm);
     box-shadow: var(--shadow-pop);
     backdrop-filter: blur(24px) saturate(140%);
@@ -135,7 +135,7 @@
   }
 
   .cm-item:active:not(:disabled) {
-    background: rgba(255, 255, 255, 0.14);
+    background: var(--surface-hover);
   }
 
   .cm-item:disabled {
@@ -171,6 +171,6 @@
   .cm-separator {
     height: 1px;
     margin: 5px 8px;
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-strong);
   }
 </style>

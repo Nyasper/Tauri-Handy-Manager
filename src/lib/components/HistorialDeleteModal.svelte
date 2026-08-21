@@ -353,8 +353,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 16px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
   }
 
@@ -403,8 +403,8 @@
     align-items: center;
     gap: 12px;
     padding: 14px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
   }
 

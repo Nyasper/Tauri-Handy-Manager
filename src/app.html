@@ -6,6 +6,16 @@
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <title>Handy Manager — Gestión de Comunicaciones</title>
     <meta name="description" content="Aplicación administrativa premium para el control, asignación e historial de handies y radiocomunicaciones del personal." />
+    <script>
+      (() => {
+        try {
+          const t = localStorage.getItem('hm-theme');
+          document.documentElement.dataset.theme = t === 'light' ? 'light' : 'dark';
+        } catch {
+          document.documentElement.dataset.theme = 'dark';
+        }
+      })();
+    </script>
     %sveltekit.head%
   </head>
   <body data-sveltekit-preload-data="hover">

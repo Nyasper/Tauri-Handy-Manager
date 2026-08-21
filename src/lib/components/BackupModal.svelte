@@ -194,8 +194,8 @@
     display: flex;
     gap: 16px;
     padding: 18px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.06);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-md);
   }
 
@@ -236,7 +236,7 @@
 
   .card-content h4 {
     font-size: 1rem;
-    color: #fff;
+    color: var(--text-primary);
   }
 
   .card-content p {

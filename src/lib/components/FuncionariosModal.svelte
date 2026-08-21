@@ -492,9 +492,9 @@
     padding: 16px 24px 12px;
     background: linear-gradient(
       to bottom,
-      rgba(13, 14, 18, 0.97) 0%,
-      rgba(13, 14, 18, 0.97) 72%,
-      rgba(13, 14, 18, 0) 100%
+      var(--modal-bg) 0%,
+      var(--modal-bg) 72%,
+      transparent 100%
     );
   }
 
@@ -509,8 +509,8 @@
 
   .tab-btn {
     flex: 1;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     color: var(--text-secondary);
     padding: 10px;
     font-family: var(--font-header);
@@ -522,9 +522,9 @@
   }
 
   .tab-btn.active {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--surface-hover);
     border-color: var(--color-accent-border);
-    color: #fff;
+    color: var(--text-primary);
   }
 
   .modal-body {
@@ -545,8 +545,8 @@
     flex-direction: column;
     gap: 10px;
     padding: 14px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
   }
 
@@ -561,8 +561,8 @@
     align-items: center;
     gap: 12px;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
   }
 
@@ -587,7 +587,7 @@
     font-size: 0.7rem;
     font-weight: 600;
     color: var(--color-accent);
-    background: rgba(255, 255, 255, 0.06);
+    background: var(--surface-1);
     border: 1px solid var(--color-accent-border);
     border-radius: 999px;
     padding: 2px 8px;

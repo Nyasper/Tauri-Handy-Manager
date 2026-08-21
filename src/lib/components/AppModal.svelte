@@ -54,7 +54,7 @@
   .modal-overlay {
     position: fixed;
     inset: 0;
-    background: rgba(0, 0, 0, 0.65);
+    background: var(--overlay-scrim);
     backdrop-filter: blur(10px);
     -webkit-backdrop-filter: blur(10px);
     display: flex;
@@ -72,8 +72,8 @@
     flex-direction: column;
     overflow: visible;
     border-radius: var(--radius-lg);
-    background: rgba(13, 14, 18, 0.92);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--modal-bg);
+    border: 1px solid var(--border-2);
     box-shadow: var(--shadow-pop);
   }
 
@@ -83,7 +83,7 @@
     align-items: center;
     gap: 8px;
     padding: 20px 24px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    border-bottom: 1px solid var(--border-1);
     flex-shrink: 0;
   }
 
@@ -96,7 +96,7 @@
 
   .modal-header h3 {
     font-size: 1.2rem;
-    color: #fff;
+    color: var(--text-primary);
     min-width: 0;
   }
 
@@ -115,8 +115,8 @@
   }
 
   .close-btn:hover {
-    background: rgba(255, 255, 255, 0.05);
-    color: #fff;
+    background: var(--surface-1);
+    color: var(--text-primary);
   }
 
   @media (max-width: 768px) {

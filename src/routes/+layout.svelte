@@ -42,14 +42,14 @@
     gap: 16px;
     font-family: var(--font-header);
     background-color: var(--bg-main);
-    background-image: radial-gradient(ellipse 85% 55% at 50% -12%, rgba(255, 255, 255, 0.07), transparent 60%);
+    background-image: radial-gradient(ellipse 85% 55% at 50% -12%, var(--bg-glow-loading), transparent 60%);
     background-attachment: fixed;
   }
 
   .spinner {
     width: 50px;
     height: 50px;
-    border: 3px solid rgba(255, 255, 255, 0.1);
+    border: 3px solid var(--spinner-track);
     border-radius: 50%;
     border-top-color: var(--color-accent);
     animation: spin 1s ease-in-out infinite;

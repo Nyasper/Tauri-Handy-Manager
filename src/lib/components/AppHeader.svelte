@@ -1,5 +1,6 @@
 <script lang="ts">
   import { shortcuts } from '$lib/services/shortcuts.service.svelte';
+  import { theme } from '$lib/services/theme.service.svelte';
 
   let {
     totalCount,
@@ -73,6 +74,32 @@
       </svg>
       Administración
     </button>
+    <button
+      type="button"
+      class="btn-secondary manage-btn theme-toggle"
+      {@attach shortcuts.rovingFocus('header')}
+      onclick={() => theme.toggle()}
+      title={theme.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      aria-label={theme.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+    >
+      {#if theme.theme === 'dark'}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="4"></circle>
+          <path d="M12 2v2"></path>
+          <path d="M12 20v2"></path>
+          <path d="m4.93 4.93 1.41 1.41"></path>
+          <path d="m17.66 17.66 1.41 1.41"></path>
+          <path d="M2 12h2"></path>
+          <path d="M20 12h2"></path>
+          <path d="m6.34 17.66-1.41 1.41"></path>
+          <path d="m19.07 4.93-1.41 1.41"></path>
+        </svg>
+      {:else}
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+        </svg>
+      {/if}
+    </button>
   </div>
 </header>
 
@@ -83,7 +110,7 @@
     align-items: center;
     padding: 18px 30px;
     border-radius: var(--radius-lg);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.02));
+    background: linear-gradient(135deg, var(--surface-1), var(--surface-subtle));
     box-shadow: var(--shadow-panel);
     flex-shrink: 0;
   }
@@ -97,7 +124,7 @@
   .brand h1 {
     font-size: 1.5rem;
     letter-spacing: 0.1em;
-    background: linear-gradient(to right, #ffffff, var(--text-secondary));
+    background: linear-gradient(to right, var(--brand-text), var(--text-secondary));
     -webkit-background-clip: text;
     background-clip: text;
     -webkit-text-fill-color: transparent;
@@ -133,9 +160,19 @@
     height: 16px;
   }
 
+  .theme-toggle svg {
+    width: 17px;
+    height: 17px;
+    transition: transform var(--transition-fast);
+  }
+
+  .theme-toggle:hover svg {
+    transform: rotate(20deg) scale(1.1);
+  }
+
   .stat-badge {
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     padding: 8px 16px;
     border-radius: var(--radius-sm);
     display: flex;
@@ -157,7 +194,7 @@
 
   .stat-badge.info.active {
     border-color: var(--color-accent);
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--surface-hover);
     box-shadow: 0 0 12px var(--color-accent-glow);
   }
 
@@ -182,8 +219,8 @@
   .stat-badge.success .stat-value { color: var(--color-success); }
 
   .stat-badge.info {
-    border-color: rgba(255, 255, 255, 0.16);
-    background: rgba(255, 255, 255, 0.05);
+    border-color: var(--border-2);
+    background: var(--surface-1);
   }
   .stat-badge.info .stat-value { color: var(--color-accent); }
 

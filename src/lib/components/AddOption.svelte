@@ -24,7 +24,7 @@
     gap: 10px;
     width: 100%;
     padding: 12px 14px;
-    background: rgba(255, 255, 255, 0.04);
+    background: var(--surface-1);
     border: 1px dashed var(--color-accent-border);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
@@ -42,7 +42,7 @@
     height: 22px;
     border-radius: 50%;
     background: var(--color-accent);
-    color: #0a0a0a;
+    color: var(--accent-contrast);
     font-size: 0.95rem;
     font-weight: 700;
     flex-shrink: 0;

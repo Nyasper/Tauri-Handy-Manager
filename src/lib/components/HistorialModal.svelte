@@ -394,9 +394,9 @@
     padding: 20px 24px 16px;
     background: linear-gradient(
       to bottom,
-      rgba(13, 14, 18, 0.97) 0%,
-      rgba(13, 14, 18, 0.97) 72%,
-      rgba(13, 14, 18, 0) 100%
+      var(--modal-bg) 0%,
+      var(--modal-bg) 72%,
+      transparent 100%
     );
   }
 
@@ -416,8 +416,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     color: var(--text-secondary);
     padding: 8px 12px;
     border-radius: var(--radius-sm);
@@ -439,8 +439,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     color: var(--text-secondary);
     padding: 6px 12px;
     border-radius: var(--radius-sm);
@@ -456,14 +456,14 @@
   }
 
   .date-range-group input[type='date'] {
-    background: rgba(0, 0, 0, 0.3);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--date-input-bg);
+    border: 1px solid var(--border-2);
     color: var(--text-primary);
     padding: 4px 8px;
     border-radius: 6px;
     font-family: var(--font-body);
     font-size: 0.85rem;
-    color-scheme: dark;
+    color-scheme: var(--scheme);
   }
 
   .date-range-group input[type='date']:focus {
@@ -509,8 +509,8 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     color: var(--text-secondary);
     padding: 8px 12px;
     border-radius: var(--radius-sm);
@@ -531,9 +531,9 @@
   }
 
   .stat-chip.active {
-    background: rgba(255, 255, 255, 0.12);
+    background: var(--surface-hover);
     border-color: var(--color-accent-border);
-    color: #fff;
+    color: var(--text-primary);
   }
 
   .stat-chip.danger.active {
@@ -575,8 +575,8 @@
     display: flex;
     align-items: center;
     gap: 6px;
-    background: rgba(255, 255, 255, 0.03);
-    border: 1px solid rgba(255, 255, 255, 0.12);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-2);
     color: var(--color-accent);
     padding: 8px 12px;
     border-radius: var(--radius-sm);
@@ -592,8 +592,8 @@
   }
 
   .backup-btn:hover:not(:disabled) {
-    background: rgba(255, 255, 255, 0.09);
-    border-color: rgba(255, 255, 255, 0.3);
+    background: var(--surface-hover);
+    border-color: var(--border-strong);
   }
 
   .delete-btn {
@@ -632,7 +632,7 @@
     text-align: center;
     color: var(--text-muted);
     font-size: 0.75rem;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--border-2);
     border-radius: var(--radius-sm);
   }
 
@@ -649,8 +649,8 @@
     align-items: center;
     gap: 14px;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
   }
 
@@ -705,7 +705,7 @@
   .history-empty {
     padding: 40px 20px;
     text-align: center;
-    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border: 1px dashed var(--border-2);
     border-radius: var(--radius-md);
     color: var(--text-secondary);
     font-size: 0.9rem;

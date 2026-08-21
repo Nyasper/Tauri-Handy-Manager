@@ -95,12 +95,12 @@
 
   .handy-card-wrap.pinned .handy-card {
     border-color: rgba(245, 158, 11, 0.5);
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.09), rgba(8, 8, 10, 0.5));
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.09), var(--pinned-fade));
   }
 
   .handy-card:hover {
     transform: translateY(-4px);
-    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-1);
   }
 
   .handy-card:focus-visible {
@@ -117,8 +117,8 @@
     display: flex;
     align-items: center;
     justify-content: center;
-    background: rgba(255, 255, 255, 0.04);
-    border: 1px solid rgba(255, 255, 255, 0.08);
+    background: var(--surface-1);
+    border: 1px solid var(--border-1);
     border-radius: 50%;
     color: var(--text-muted);
     cursor: pointer;
@@ -147,8 +147,8 @@
     width: 40px;
     height: 40px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.05);
-    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: var(--surface-1);
+    border: 1px solid var(--border-2);
     display: flex;
     align-items: center;
     justify-content: center;

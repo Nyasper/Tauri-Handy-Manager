@@ -255,8 +255,8 @@
     align-items: center;
     gap: 12px;
     padding: 12px 16px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
     font-size: 0.9rem;
     color: var(--text-secondary);
@@ -315,9 +315,9 @@
     padding: 0 24px 12px;
     background: linear-gradient(
       to bottom,
-      rgba(13, 14, 18, 0.97) 0%,
-      rgba(13, 14, 18, 0.97) 72%,
-      rgba(13, 14, 18, 0) 100%
+      var(--modal-bg) 0%,
+      var(--modal-bg) 72%,
+      transparent 100%
     );
   }
 
@@ -337,8 +337,8 @@
     gap: 12px;
     width: 100%;
     padding: 10px 14px;
-    background: rgba(255, 255, 255, 0.02);
-    border: 1px solid rgba(255, 255, 255, 0.05);
+    background: var(--surface-subtle);
+    border: 1px solid var(--border-1);
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     font-family: var(--font-body);
@@ -348,7 +348,7 @@
   }
 
   .owner-item.selected {
-    background: rgba(255, 255, 255, 0.1);
+    background: var(--surface-strong);
     border-color: var(--color-accent);
   }
 
