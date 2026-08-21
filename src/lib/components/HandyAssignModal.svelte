@@ -3,7 +3,7 @@
   import Alert from './Alert.svelte';
   import SearchInput from './SearchInput.svelte';
   import AddOption from './AddOption.svelte';
-  import { handyDB, type Handy } from '$lib\/services/db.service.svelte';
+  import { handyDB, type Handy } from '$lib/services/db.service.svelte';
 
   let {
     handy,
@@ -51,6 +51,9 @@
     })(),
   );
 
+  // Allow submitting when an owner is selected or when the typed name is a new one to create.
+  const canSubmit = $derived(selectedOwnerId != null || canAddNew);
+
   function clearFeedback() {
     actionError = null;
     actionSuccess = null;
@@ -82,7 +85,17 @@
     clearFeedback();
 
     if (selectedOwnerId == null) {
-      actionError = 'Selecciona una persona de la lista';
+      const name = searchInput.trim();
+      if (!name) {
+        actionError = 'Selecciona una persona de la lista o escribe un nombre nuevo';
+        return;
+      }
+      try {
+        await handyDB.assign(handy.id, name);
+        onclose();
+      } catch (err: any) {
+        actionError = err.message || 'Error al guardar los cambios';
+      }
       return;
     }
 
@@ -128,7 +141,7 @@
       <form onsubmit={handleSave} class="assignment-form">
         <div class="form-group">
           <label for="assign-owner-search">Funcionario</label>
-          <div data-nav-section="search">
+          <div class="assign-search" data-nav-section="search">
             <SearchInput
               id="assign-owner-search"
               bind:value={searchInput}
@@ -138,6 +151,7 @@
 
           <div class="owners-list" data-nav-section="list">
             {#each filteredOwners as owner (owner.id)}
+              {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
               <button
                 type="button"
                 class="owner-item"
@@ -149,8 +163,8 @@
                   {#if owner.area_name}
                     <span class="area-badge">{owner.area_name}</span>
                   {/if}
-                  {#if handyDB.handyByOwner.get(owner.id) != null}
-                    <span class="handy-badge-sm">Handy #{handyDB.handyByOwner.get(owner.id)}</span>
+                  {#if ownerHandyId != null}
+                    <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
                   {/if}
                 </span>
               </button>
@@ -166,7 +180,7 @@
           </div>
 
           <span class="helper-text">
-            Selecciona una persona de la lista o escribe un nombre nuevo para crearla. El área se asigna desde "Administración".
+            Selecciona una persona de la lista o escribe un nombre nuevo: al confirmar se creará y asignará automáticamente. El área se asigna desde "Administración".
           </span>
         </div>
 
@@ -180,14 +194,14 @@
 
         <div class="action-buttons" data-nav-section="actions">
           {#if handy.owner_id}
-            <button type="submit" class="btn-primary" disabled={selectedOwnerId == null}>
+            <button type="submit" class="btn-primary" disabled={!canSubmit}>
               Guardar Cambios
             </button>
             <button type="button" class="btn-danger" onclick={handleUnassign}>
               Desvincular
             </button>
           {:else}
-            <button type="submit" class="btn-primary w-full" disabled={selectedOwnerId == null}>
+            <button type="submit" class="btn-primary w-full" disabled={!canSubmit}>
               Asignar Handy
             </button>
           {/if}
@@ -203,7 +217,6 @@
     display: flex;
     flex-direction: column;
     gap: 20px;
-    overflow-y: auto;
   }
 
   .status-banner {
@@ -261,6 +274,20 @@
     font-size: 0.85rem;
     font-weight: 500;
     color: var(--text-secondary);
+  }
+
+  .assign-search {
+    position: sticky;
+    top: 0;
+    z-index: 10;
+    margin: 0 -24px;
+    padding: 0 24px 12px;
+    background: linear-gradient(
+      to bottom,
+      rgba(13, 14, 18, 0.97) 0%,
+      rgba(13, 14, 18, 0.97) 72%,
+      rgba(13, 14, 18, 0) 100%
+    );
   }
 
   .owners-list {
