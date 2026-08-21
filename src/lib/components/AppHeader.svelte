@@ -9,7 +9,6 @@
     onfilter,
     onfuncionarios,
     onhistorial,
-    onbackup,
   }: {
     totalCount: number;
     assignedCount: number;
@@ -18,7 +17,6 @@
     onfilter: (filter: 'assigned' | 'free') => void;
     onfuncionarios: () => void;
     onhistorial: () => void;
-    onbackup: () => void;
   } = $props();
 </script>
 
@@ -74,14 +72,6 @@
         <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
       </svg>
       Administración
-    </button>
-    <button type="button" class="btn-secondary manage-btn backup-btn" {@attach shortcuts.rovingFocus('header')} onclick={onbackup} title="Crear o restaurar copias de seguridad">
-      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-        <polyline points="7 10 12 15 17 10"></polyline>
-        <line x1="12" y1="15" x2="12" y2="3"></line>
-      </svg>
-      Copia de seguridad
     </button>
   </div>
 </header>
@@ -141,16 +131,6 @@
   .manage-btn svg {
     width: 16px;
     height: 16px;
-  }
-
-  .backup-btn {
-    border-color: rgba(16, 185, 129, 0.25);
-    color: var(--color-success);
-  }
-
-  .backup-btn:hover:not(:disabled) {
-    border-color: rgba(16, 185, 129, 0.55);
-    background: rgba(16, 185, 129, 0.08);
   }
 
   .stat-badge {

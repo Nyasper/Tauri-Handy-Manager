@@ -5,6 +5,7 @@
   import AppModal from './AppModal.svelte';
   import SearchInput from './SearchInput.svelte';
   import HistorialDeleteModal from './HistorialDeleteModal.svelte';
+  import BackupModal from './BackupModal.svelte';
   import Alert from './Alert.svelte';
 
   let { onclose }: { onclose: () => void } = $props();
@@ -12,6 +13,7 @@
   let searchInput = $state('');
   let actionFilter = $state<'all' | 'assign' | 'unassign'>('all');
   let showDeleteModal = $state(false);
+  let showBackupModal = $state(false);
   let exporting = $state(false);
   let exportError = $state<string | null>(null);
   let exportSuccess = $state<string | null>(null);
@@ -124,7 +126,20 @@
             <polyline points="7 10 12 15 17 10"></polyline>
             <line x1="12" y1="15" x2="12" y2="3"></line>
           </svg>
-          {exporting ? 'Exportando...' : 'Exportar'}
+          {exporting ? 'Exportando...' : 'Exportar a CSV'}
+        </button>
+        <button
+          type="button"
+          class="backup-btn"
+          onclick={() => (showBackupModal = true)}
+          title="Crear o restaurar copias de seguridad"
+        >
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+          </svg>
+          Copia de seguridad
         </button>
         <button
           type="button"
@@ -179,6 +194,10 @@
 
 {#if showDeleteModal}
   <HistorialDeleteModal onclose={() => (showDeleteModal = false)} />
+{/if}
+
+{#if showBackupModal}
+  <BackupModal onclose={() => (showBackupModal = false)} />
 {/if}
 
 <style>
@@ -284,6 +303,31 @@
   .export-btn:disabled {
     opacity: 0.6;
     cursor: default;
+  }
+
+  .backup-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--color-accent);
+    padding: 8px 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+
+  .backup-btn svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .backup-btn:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.09);
+    border-color: rgba(255, 255, 255, 0.3);
   }
 
   .delete-btn {
@@ -407,6 +451,7 @@
 
     .stat-chip,
     .export-btn,
+    .backup-btn,
     .delete-btn {
       flex: 1;
       justify-content: center;

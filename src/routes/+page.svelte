@@ -5,7 +5,6 @@
   import FuncionariosModal from '$lib/components/FuncionariosModal.svelte';
   import HistorialModal from '$lib/components/HistorialModal.svelte';
   import HandyAssignModal from '$lib/components/HandyAssignModal.svelte';
-  import BackupModal from '$lib/components/BackupModal.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { shortcuts } from '$lib/services/shortcuts.service.svelte';
 
@@ -13,7 +12,6 @@
   let activeFilter = $state<'all' | 'assigned' | 'free'>('all');
   let showFuncionariosModal = $state(false);
   let showHistorialModal = $state(false);
-  let showBackupModal = $state(false);
   let assignHandyId = $state<number | null>(null);
 
   // Expose app actions to the global keyboard shortcuts service
@@ -105,7 +103,6 @@
     onfilter={toggleFilter}
     onfuncionarios={() => (showFuncionariosModal = true)}
     onhistorial={() => (showHistorialModal = true)}
-    onbackup={() => (showBackupModal = true)}
   />
 
   <HandiesGrid
@@ -139,10 +136,6 @@
 
 {#if showHistorialModal}
   <HistorialModal onclose={() => (showHistorialModal = false)} />
-{/if}
-
-{#if showBackupModal}
-  <BackupModal onclose={() => (showBackupModal = false)} />
 {/if}
 
 <style>
