@@ -178,7 +178,17 @@ class HandyDB {
     if (!normalized) throw new Error("El nombre de la persona no puede estar vacío");
 
     const existing = this.findOwner(normalized);
-    if (existing) return existing;
+    if (existing) {
+      if (existing.name !== normalized) {
+        await this.db.execute("UPDATE owners SET name = ? WHERE id = ?", [
+          normalized,
+          existing.id,
+        ]);
+        await this.refresh();
+        return this.findOwner(normalized)!;
+      }
+      return existing;
+    }
 
     const resolvedAreaId = areaId ?? this.defaultAreaId;
     if (resolvedAreaId == null) throw new Error("No hay áreas disponibles");

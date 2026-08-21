@@ -9,3 +9,4 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 ### Corregido
 
 - Permitir renombrar funcionarios y áreas solo cambiando la capitalización del nombre (ej. "juan" → "JUAN").
+- Corregir capitalización de un funcionario desde los flujos de creación/asignación: al escribir un nombre que difiere solo en mayúsculas de uno existente, se actualiza en lugar de ignorarse.

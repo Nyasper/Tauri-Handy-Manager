@@ -37,13 +37,18 @@
     })(),
   );
 
-  // Show "Agregar owner" when there's text that matches neither an existing owner nor an area
+  // Show "Agregar owner" when there's text that matches neither an existing owner (case-insensitive)
+  // nor an area, but skip hiding it when the only match is a capitalization variant of an owner.
   const canAddNew = $derived(
-    searchInput.trim().length > 0 &&
-      handyDB.findOwner(searchInput) === null &&
-      handyDB.areas.every(
-        (a) => a.name.trim().toLowerCase() !== searchInput.trim().toLowerCase(),
-      ),
+    (() => {
+      const text = searchInput.trim();
+      if (!text) return false;
+      const existing = handyDB.findOwner(text);
+      if (existing !== null && existing.name === text) return false;
+      return handyDB.areas.every(
+        (a) => a.name.trim().toLowerCase() !== text.toLowerCase(),
+      );
+    })(),
   );
 
   function clearFeedback() {

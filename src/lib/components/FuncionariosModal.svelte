@@ -35,10 +35,15 @@
     })(),
   );
 
-  // Show "Agregar funcionario" when there's text that doesn't match an existing owner
+  // Show "Agregar funcionario" when there's text that doesn't match an existing owner,
+  // or matches one only as a capitalization variant (so it can be corrected).
   const canAddNew = $derived(
-    searchInput.trim().length > 0 &&
-      handyDB.findOwner(searchInput) === null,
+    (() => {
+      const text = searchInput.trim();
+      if (!text) return false;
+      const existing = handyDB.findOwner(text);
+      return existing === null || existing.name !== text;
+    })(),
   );
 
   // Number of owners per area (for display)
