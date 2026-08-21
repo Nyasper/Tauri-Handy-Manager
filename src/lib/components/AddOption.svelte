@@ -3,16 +3,19 @@
     label,
     text,
     onclick,
+    suffix,
   }: {
     label: string;
     text: string;
     onclick: () => void;
+    suffix?: string;
   } = $props();
 </script>
 
 <button type="button" class="add-option" {onclick}>
   <span class="add-plus">+</span>
   {label} <strong>{text}</strong>
+  {#if suffix}<span class="add-suffix">{suffix}</span>{/if}
 </button>
 
 <style>

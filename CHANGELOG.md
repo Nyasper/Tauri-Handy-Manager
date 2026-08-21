@@ -24,6 +24,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ### Mejorado
 
+- El botón "Agregar funcionario" del modal de asignación indica el handy a asignar (ej. "y asignar handy #5").
+- Deshabilitar automáticamente el botón "Asignar Handy" cuando la búsqueda no encuentra ningún funcionario ni un nombre nuevo válido.
 - Refactor de accesibilidad de las tarjetas de handy: la tarjeta es un `<button>` nativo y el botón de fijar queda fuera de ella (HTML válido, sin interactivos anidados).
 - Eliminar imports con barras escapadas (`$lib\/...`) y extraer lookups repetidos de `handyByOwner` en las listas de administración.
 

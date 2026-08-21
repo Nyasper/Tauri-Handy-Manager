@@ -51,8 +51,12 @@
     })(),
   );
 
-  // Allow submitting when an owner is selected or when the typed name is a new one to create.
-  const canSubmit = $derived(selectedOwnerId != null || canAddNew);
+  // Allow submitting when an owner from the visible list is selected or when the
+  // typed name is a new one to create. Disables the button when the search yields
+  // no results and there's no new name to create.
+  const canSubmit = $derived(
+    canAddNew || filteredOwners.some((o) => o.id === selectedOwnerId),
+  );
 
   function clearFeedback() {
     actionError = null;
@@ -172,8 +176,9 @@
 
             {#if canAddNew}
               <AddOption
-                label="Agregar funcionario:"
+                label="Agregar funcionario"
                 text={searchInput.trim()}
+                suffix={` y asignar handy #${handy.id}`}
                 onclick={addNewOwner}
               />
             {/if}
