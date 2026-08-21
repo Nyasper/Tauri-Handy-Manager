@@ -59,14 +59,14 @@
       <span class="stat-label">Libres</span>
       <span class="stat-value">{freeCount}</span>
     </button>
-    <button class="btn-secondary manage-btn" {@attach shortcuts.rovingFocus('header')} onclick={onhistorial}>
+    <button type="button" class="btn-secondary manage-btn" {@attach shortcuts.rovingFocus('header')} onclick={onhistorial}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <circle cx="12" cy="12" r="10"></circle>
         <polyline points="12 6 12 12 16 14"></polyline>
       </svg>
       Historial
     </button>
-    <button class="btn-secondary manage-btn" {@attach shortcuts.rovingFocus('header')} onclick={onfuncionarios}>
+    <button type="button" class="btn-secondary manage-btn" {@attach shortcuts.rovingFocus('header')} onclick={onfuncionarios}>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
         <circle cx="9" cy="7" r="4"></circle>

@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Handy } from '$lib\/services/db.service.svelte';
+  import type { Handy } from '$lib/services/db.service.svelte';
   import { shortcuts } from '$lib/services/shortcuts.service.svelte';
 
   let {
@@ -17,32 +17,14 @@
   } = $props();
 </script>
 
-<div
-  class="handy-card glass-panel"
-  class:assigned={handy.owner_id !== null}
-  class:pinned={pinned}
-  role="button"
-  tabindex="0"
-  {@attach shortcuts.rovingFocus('grid')}
-  onclick={onassign}
-  oncontextmenu={oncontextmenu}
-  onkeydown={(e) => {
-    if (e.key === 'Enter' || e.key === ' ') {
-      e.preventDefault();
-      onassign();
-    }
-  }}
->
+<div class="handy-card-wrap" class:pinned={pinned}>
   {#if handy.owner_id !== null}
     <button
       type="button"
       class="pin-btn"
       class:active={pinned}
       title={pinned ? 'Desfijar' : 'Fijar'}
-      onclick={(e) => {
-        e.stopPropagation();
-        onpin();
-      }}
+      onclick={onpin}
     >
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
         <path d="M12 17v5"></path>
@@ -51,36 +33,52 @@
     </button>
   {/if}
 
-  <div class="handy-badge">
-    <span class="handy-number">{handy.id}</span>
-  </div>
+  <button
+    type="button"
+    class="handy-card glass-panel"
+    class:assigned={handy.owner_id !== null}
+    {@attach shortcuts.rovingFocus('grid')}
+    onclick={onassign}
+    oncontextmenu={oncontextmenu}
+  >
+    <div class="handy-badge">
+      <span class="handy-number">{handy.id}</span>
+    </div>
 
-  <div class="handy-info">
-    <span class="handy-title">Handy {handy.id}</span>
-    {#if handy.owner_name}
-      <span class="handy-status text-success" title={handy.owner_name}>
-        {handy.owner_name}
-      </span>
-      {#if handy.area_name}
-        <span class="handy-area text-muted" title={handy.area_name}>
-          {handy.area_name}
+    <div class="handy-info">
+      <span class="handy-title">Handy {handy.id}</span>
+      {#if handy.owner_name}
+        <span class="handy-status text-success" title={handy.owner_name}>
+          {handy.owner_name}
         </span>
+        {#if handy.area_name}
+          <span class="handy-area text-muted" title={handy.area_name}>
+            {handy.area_name}
+          </span>
+        {/if}
+      {:else}
+        <span class="handy-status text-muted">Libre</span>
       {/if}
-    {:else}
-      <span class="handy-status text-muted">Libre</span>
-    {/if}
-  </div>
+    </div>
 
-  <!-- Glowing indicator dot -->
-  <div class="indicator-dot"></div>
+    <!-- Glowing indicator dot -->
+    <div class="indicator-dot"></div>
+  </button>
 </div>
 
 <style>
+  .handy-card-wrap {
+    position: relative;
+    min-width: 0;
+  }
+
   .handy-card {
+    appearance: none;
     display: flex;
     flex-direction: column;
     align-items: center;
     justify-content: center;
+    width: 100%;
     padding: 14px 10px 16px;
     text-align: center;
     gap: 8px;
@@ -90,6 +88,14 @@
     user-select: none;
     overflow: hidden;
     height: 160px;
+    color: inherit;
+    font-family: inherit;
+    font-size: inherit;
+  }
+
+  .handy-card-wrap.pinned .handy-card {
+    border-color: rgba(245, 158, 11, 0.5);
+    background: linear-gradient(135deg, rgba(245, 158, 11, 0.09), rgba(8, 8, 10, 0.5));
   }
 
   .handy-card:hover {
@@ -100,11 +106,6 @@
   .handy-card:focus-visible {
     outline: 2px solid var(--color-accent);
     outline-offset: 2px;
-  }
-
-  .handy-card.pinned {
-    border-color: rgba(245, 158, 11, 0.5);
-    background: linear-gradient(135deg, rgba(245, 158, 11, 0.09), rgba(8, 8, 10, 0.5));
   }
 
   .pin-btn {

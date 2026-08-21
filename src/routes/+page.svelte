@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { handyDB, type Handy } from '$lib\/services/db.service.svelte';
+  import { handyDB, type Handy } from '$lib/services/db.service.svelte';
   import AppHeader from '$lib/components/AppHeader.svelte';
   import HandiesGrid from '$lib/components/HandiesGrid.svelte';
   import FuncionariosModal from '$lib/components/FuncionariosModal.svelte';

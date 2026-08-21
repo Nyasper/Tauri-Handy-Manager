@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { handyDB } from '$lib\/services/db.service.svelte';
+  import { handyDB } from '$lib/services/db.service.svelte';
   import ContextMenu from '$lib/components/ContextMenu.svelte';
   import ModalHost from '$lib/components/ModalHost.svelte';
   import '../app.css';
@@ -23,7 +23,7 @@
   <div class="error-screen animate-fade">
     <h2>Error de Conexión</h2>
     <p>{handyDB.error}</p>
-    <button class="btn-primary" onclick={() => handyDB.refresh()}>Reintentar</button>
+    <button class="btn-primary" onclick={() => handyDB.initDb()}>Reintentar</button>
   </div>
 {:else}
   {@render children()}

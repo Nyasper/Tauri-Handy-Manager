@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Handy } from '$lib\/services/db.service.svelte';
+  import type { Handy } from '$lib/services/db.service.svelte';
   import SearchInput from './SearchInput.svelte';
   import HandySection from './HandySection.svelte';
 

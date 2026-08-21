@@ -1,5 +1,5 @@
 <script lang="ts">
-  import type { Handy } from '$lib\/services/db.service.svelte';
+  import type { Handy } from '$lib/services/db.service.svelte';
   import HandyCard from './HandyCard.svelte';
 
   let {
