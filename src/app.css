@@ -51,6 +51,7 @@
 
 html {
   color-scheme: dark;
+  height: 100%;
 }
 
 body {
@@ -63,8 +64,8 @@ body {
     radial-gradient(ellipse 50% 40% at -5% 100%, rgba(255, 255, 255, 0.03), transparent 55%);
   background-attachment: fixed;
   background-repeat: no-repeat;
-  min-height: 100vh;
-  overflow-x: hidden;
+  height: 100%;
+  overflow: hidden;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;

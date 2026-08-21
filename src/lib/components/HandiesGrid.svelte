@@ -62,6 +62,11 @@
   .workspace {
     display: flex;
     flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    padding-right: 10px;
+    padding-bottom: 12px;
   }
 
   .grid-section {
@@ -71,11 +76,21 @@
   }
 
   .grid-header {
+    position: sticky;
+    top: 0;
+    z-index: 10;
     display: flex;
     align-items: center;
     justify-content: flex-end;
     margin-bottom: 8px;
     flex-shrink: 0;
+    padding-bottom: 10px;
+    background: linear-gradient(
+      to bottom,
+      var(--bg-main) 0%,
+      rgba(8, 8, 10, 0.92) 70%,
+      rgba(8, 8, 10, 0) 100%
+    );
   }
 
   :global(.page-search) {

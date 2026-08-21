@@ -5,6 +5,7 @@
   import FuncionariosModal from '$lib/components/FuncionariosModal.svelte';
   import HistorialModal from '$lib/components/HistorialModal.svelte';
   import HandyAssignModal from '$lib/components/HandyAssignModal.svelte';
+  import BackupModal from '$lib/components/BackupModal.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { shortcuts } from '$lib/services/shortcuts.service.svelte';
 
@@ -12,6 +13,7 @@
   let activeFilter = $state<'all' | 'assigned' | 'free'>('all');
   let showFuncionariosModal = $state(false);
   let showHistorialModal = $state(false);
+  let showBackupModal = $state(false);
   let assignHandyId = $state<number | null>(null);
 
   // Expose app actions to the global keyboard shortcuts service
@@ -103,6 +105,7 @@
     onfilter={toggleFilter}
     onfuncionarios={() => (showFuncionariosModal = true)}
     onhistorial={() => (showHistorialModal = true)}
+    onbackup={() => (showBackupModal = true)}
   />
 
   <HandiesGrid
@@ -138,6 +141,10 @@
   <HistorialModal onclose={() => (showHistorialModal = false)} />
 {/if}
 
+{#if showBackupModal}
+  <BackupModal onclose={() => (showBackupModal = false)} />
+{/if}
+
 <style>
   .dashboard-container {
     max-width: 1200px;
@@ -146,7 +153,9 @@
     display: flex;
     flex-direction: column;
     gap: 24px;
-    min-height: 100vh;
+    height: 100vh;
+    height: 100dvh;
+    overflow: hidden;
   }
 
   .shortcut-hints {
@@ -159,6 +168,7 @@
     gap: 6px 20px;
     color: var(--text-muted);
     font-size: 0.75rem;
+    flex-shrink: 0;
   }
 
   .hint {

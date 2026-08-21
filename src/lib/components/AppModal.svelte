@@ -44,7 +44,9 @@
         </svg>
       </button>
     </div>
-    {@render children()}
+    <div class="modal-content">
+      {@render children()}
+    </div>
   </div>
 </div>
 
@@ -81,6 +83,14 @@
     gap: 8px;
     padding: 20px 24px;
     border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+    flex-shrink: 0;
+  }
+
+  .modal-content {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    overflow-x: hidden;
   }
 
   .modal-header h3 {

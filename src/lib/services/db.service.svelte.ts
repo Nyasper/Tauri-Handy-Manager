@@ -1,5 +1,6 @@
 import { browser } from "$app/environment";
 import Database from "@tauri-apps/plugin-sql";
+import { invoke } from "@tauri-apps/api/core";
 
 export interface Area {
   id: number;
@@ -463,6 +464,39 @@ class HandyDB {
   async setSecurityPassword(password: string) {
     if (!this.db) throw new Error("La base de datos no está inicializada");
     await this.setSetting('security_password', password);
+  }
+
+  /** Create a consistent snapshot of the database at the given path. */
+  async backupDatabase(path: string) {
+    if (!browser) throw new Error("Operación no disponible");
+    await invoke('backup_database', { destPath: path });
+  }
+
+  /** Replace the current database with the backup at the given path. */
+  async restoreDatabase(path: string) {
+    if (!browser) throw new Error("Operación no disponible");
+    this.loading = true;
+    try {
+      if (this.db) {
+        await this.db.close();
+        this.db = null;
+      }
+      await invoke('restore_database', { srcPath: path });
+      this.db = await Database.load("sqlite:handy_manager.db");
+      await this.ensureSchema();
+      await this.refresh();
+    } catch (e: any) {
+      console.error("Error al restaurar la base de datos:", e);
+      // Intentar volver a abrir la base actual para no dejar la app sin conexión
+      try {
+        if (!this.db) this.db = await Database.load("sqlite:handy_manager.db");
+        await this.ensureSchema();
+        await this.refresh();
+      } catch {}
+      throw new Error(e.message || "Error al restaurar la base de datos");
+    } finally {
+      this.loading = false;
+    }
   }
 
   /** Delete the n most recent history entries (newest first). */
