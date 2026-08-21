@@ -58,6 +58,13 @@
     canAddNew || filteredOwners.some((o) => o.id === selectedOwnerId),
   );
 
+  // True when a different owner than the current one is selected (reassignment)
+  const isReassign = $derived(
+    handy?.owner_id != null &&
+      selectedOwnerId != null &&
+      selectedOwnerId !== handy.owner_id,
+  );
+
   function clearFeedback() {
     actionError = null;
     actionSuccess = null;
@@ -69,15 +76,15 @@
   }
 
   async function addNewOwner() {
+    if (!handy) return;
     const name = searchInput.trim();
     if (!name) return;
     clearFeedback();
 
     try {
       const owner = await handyDB.createOwner(name);
-      selectedOwnerId = owner.id;
-      searchInput = '';
-      actionSuccess = `"${owner.name}" creado; pulsa el botón para confirmar la asignación`;
+      await handyDB.assignToOwner(handy.id, owner.id);
+      onclose();
     } catch (err: any) {
       actionError = err.message || 'Error al crear el funcionario';
     }
@@ -199,9 +206,11 @@
 
         <div class="action-buttons" data-nav-section="actions">
           {#if handy.owner_id}
-            <button type="submit" class="btn-primary" disabled={!canSubmit}>
-              Guardar Cambios
-            </button>
+            {#if isReassign}
+              <button type="submit" class="btn-primary" disabled={!canSubmit}>
+                Reasignar Handy
+              </button>
+            {/if}
             <button type="button" class="btn-danger" onclick={handleUnassign}>
               Desvincular
             </button>

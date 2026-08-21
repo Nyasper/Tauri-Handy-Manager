@@ -1,5 +1,11 @@
 <script lang="ts">
-  import { handyDB, historyToCsv } from '$lib/services/db.service.svelte';
+  import {
+    handyDB,
+    historyToCsv,
+    HISTORY_PAGE_SIZE_MIN,
+    HISTORY_PAGE_SIZE_MAX,
+    type HistoryEntry,
+  } from '$lib/services/db.service.svelte';
   import { save } from '@tauri-apps/plugin-dialog';
   import { invoke } from '@tauri-apps/api/core';
   import AppModal from './AppModal.svelte';
@@ -18,26 +24,18 @@
   let exportError = $state<string | null>(null);
   let exportSuccess = $state<string | null>(null);
 
-  const filteredHistory = $derived(
-    (() => {
-      const term = searchInput.trim().toLowerCase();
-      return handyDB.history.filter((entry) => {
-        if (actionFilter !== 'all' && entry.action !== actionFilter) return false;
-        if (!term) return true;
-        return (
-          entry.owner_name.toLowerCase().includes(term) ||
-          String(entry.handy_id).includes(term)
-        );
-      });
-    })(),
-  );
+  // Paginated history loaded from the database (newest first)
+  let entries = $state<HistoryEntry[]>([]);
+  let total = $state(0);
+  let loading = $state(true);
+  let loadingMore = $state(false);
+  let debouncedSearch = $state('');
+  // Plain counter (not reactive): guards against stale responses without
+  // invalidating the $effect that triggers reloads.
+  let queryVersion = 0;
+  let pageSizeInput = $state(String(handyDB.historyPageSize));
 
-  const assignCount = $derived(
-    handyDB.history.filter((e) => e.action === 'assign').length,
-  );
-  const unassignCount = $derived(
-    handyDB.history.filter((e) => e.action === 'unassign').length,
-  );
+  const hasMore = $derived(entries.length < total);
 
   function formatDate(timestamp: string): string {
     const date = new Date(timestamp);
@@ -55,11 +53,108 @@
     actionFilter = actionFilter === filter ? 'all' : filter;
   }
 
+  async function reload() {
+    const version = ++queryVersion;
+    loading = true;
+    try {
+      const result = await handyDB.queryHistory({
+        action: actionFilter,
+        term: debouncedSearch,
+        limit: handyDB.historyPageSize,
+        offset: 0,
+      });
+      if (version !== queryVersion) return;
+      entries = result.entries;
+      total = result.total;
+    } catch (err: any) {
+      if (version !== queryVersion) return;
+      console.error('Error al cargar el historial:', err);
+    } finally {
+      if (version === queryVersion) loading = false;
+    }
+  }
+
+  async function loadMore() {
+    if (loading || loadingMore || !hasMore) return;
+    loadingMore = true;
+    const version = queryVersion;
+    try {
+      const result = await handyDB.queryHistory({
+        action: actionFilter,
+        term: debouncedSearch,
+        limit: handyDB.historyPageSize,
+        offset: entries.length,
+      });
+      if (version !== queryVersion) return;
+      entries = [...entries, ...result.entries];
+      total = result.total;
+    } catch (err: any) {
+      if (version !== queryVersion) return;
+      console.error('Error al cargar más historial:', err);
+    } finally {
+      if (version === queryVersion) loadingMore = false;
+    }
+  }
+
+  // Debounce the search field so typing doesn't fire a query per keystroke.
+  $effect(() => {
+    const term = searchInput;
+    const timer = setTimeout(() => {
+      debouncedSearch = term;
+    }, 250);
+    return () => clearTimeout(timer);
+  });
+
+  // Load (or reload) whenever the filters, page size or database refresh change.
+  $effect(() => {
+    debouncedSearch;
+    actionFilter;
+    handyDB.historyEpoch;
+    handyDB.historyPageSize;
+    void reload();
+  });
+
+  // Infinite scroll: when the sentinel at the end of the list becomes visible,
+  // fetch the next page.
+  const watchInfiniteScroll = (node: HTMLElement) => {
+    const observer = new IntersectionObserver(
+      (intersections) => {
+        if (intersections.some((entry) => entry.isIntersecting)) {
+          void loadMore();
+        }
+      },
+      { rootMargin: '300px' },
+    );
+    observer.observe(node);
+    return () => observer.disconnect();
+  };
+
+  async function applyPageSize() {
+    const n = parseInt(pageSizeInput, 10);
+    if (
+      !Number.isInteger(n) ||
+      n < HISTORY_PAGE_SIZE_MIN ||
+      n > HISTORY_PAGE_SIZE_MAX
+    ) {
+      pageSizeInput = String(handyDB.historyPageSize);
+      return;
+    }
+    await handyDB.setHistoryPageSize(n);
+    pageSizeInput = String(handyDB.historyPageSize);
+  }
+
   async function exportCsv() {
     exportError = null;
     exportSuccess = null;
-    if (filteredHistory.length === 0) {
-      exportError = 'No hay eventos que exportar';
+    let all: HistoryEntry[];
+    try {
+      all = await handyDB.exportHistory(actionFilter, searchInput);
+    } catch (err: any) {
+      exportError = err.message || 'Error al consultar el historial';
+      return;
+    }
+    if (all.length === 0) {
+      exportError = 'No hay registros que exportar';
       return;
     }
     let path: string | null;
@@ -76,9 +171,9 @@
     if (!path) return;
     exporting = true;
     try {
-      const csv = historyToCsv(filteredHistory);
+      const csv = historyToCsv(all);
       await invoke('write_text_file', { path, contents: csv });
-      exportSuccess = `Historial exportado (${filteredHistory.length} evento${filteredHistory.length === 1 ? '' : 's'})`;
+      exportSuccess = `Historial exportado (${all.length} registro ${all.length === 1 ? '' : 's'})`;
     } catch (err: any) {
       exportError = err.message || 'Error al exportar el historial';
     } finally {
@@ -103,7 +198,7 @@
           onclick={() => toggleFilter('assign')}
           title={actionFilter === 'assign' ? 'Mostrar todos' : 'Filtrar vinculados'}
         >
-          Vinculados <span>{assignCount}</span>
+          Vinculados <span>{handyDB.historyAssignCount}</span>
         </button>
         <button
           type="button"
@@ -112,8 +207,20 @@
           onclick={() => toggleFilter('unassign')}
           title={actionFilter === 'unassign' ? 'Mostrar todos' : 'Filtrar desvinculados'}
         >
-          Desvinculados <span>{unassignCount}</span>
+          Desvinculados <span>{handyDB.historyUnassignCount}</span>
         </button>
+        <div class="page-size-group" title="Cantidad de registros por carga">
+          <label for="history-page-size">Por página</label>
+          <input
+            id="history-page-size"
+            type="number"
+            min={HISTORY_PAGE_SIZE_MIN}
+            max={HISTORY_PAGE_SIZE_MAX}
+            step="50"
+            bind:value={pageSizeInput}
+            onchange={applyPageSize}
+          />
+        </div>
         <button
           type="button"
           class="export-btn"
@@ -160,26 +267,42 @@
     </div>
 
     <div class="history-list">
-      {#each filteredHistory as entry (entry.id)}
-        <div class="history-item" class:is-unassign={entry.action === 'unassign'}>
-          <span class="handy-badge-sm">Handy #{entry.handy_id}</span>
-          <div class="history-main">
-            <span class="history-action">
-              {#if entry.action === 'assign'}
-                Se vinculó a <strong>{entry.owner_name}</strong>
-              {:else}
-                Se desvinculó de <strong>{entry.owner_name}</strong>
-              {/if}
-            </span>
-            <span class="history-date">{formatDate(entry.timestamp)}</span>
+      {#if loading && entries.length === 0}
+        <div class="history-empty">Cargando historial...</div>
+      {:else}
+        {#each entries as entry (entry.id)}
+          <div class="history-item" class:is-unassign={entry.action === 'unassign'}>
+            <span class="handy-badge-sm">Handy #{entry.handy_id}</span>
+            <div class="history-main">
+              <span class="history-action">
+                {#if entry.action === 'assign'}
+                  Se vinculó a <strong>{entry.owner_name}</strong>
+                {:else}
+                  Se desvinculó de <strong>{entry.owner_name}</strong>
+                {/if}
+              </span>
+              <span class="history-date">{formatDate(entry.timestamp)}</span>
+            </div>
           </div>
-        </div>
-      {/each}
+        {/each}
 
-      {#if filteredHistory.length === 0}
-        <div class="history-empty">
-          <p>No hay eventos que coincidan con el filtro</p>
-        </div>
+        {#if entries.length === 0}
+          <div class="history-empty">No hay registros que coincidan con el filtro</div>
+        {:else if hasMore}
+          <div class="history-load-more">
+            {#if loadingMore}
+              Cargando más...
+            {:else}
+              Mostrando {entries.length} registros de {total} · scrolleá para cargar más
+            {/if}
+          </div>
+        {:else}
+          <div class="history-load-more end">
+            Mostrando los {entries.length} registros ({total} en total)
+          </div>
+        {/if}
+
+        <div {@attach watchInfiniteScroll} class="history-sentinel" aria-hidden="true"></div>
       {/if}
     </div>
 
@@ -237,6 +360,41 @@
     gap: 8px;
     flex-wrap: wrap;
     justify-content: flex-end;
+  }
+
+  .page-size-group {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    color: var(--text-secondary);
+    padding: 6px 12px;
+    border-radius: var(--radius-sm);
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+  }
+
+  .page-size-group label {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    white-space: nowrap;
+  }
+
+  .page-size-group input {
+    width: 74px;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: var(--text-primary);
+    padding: 4px 8px;
+    border-radius: 6px;
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+  }
+
+  .page-size-group input:focus {
+    outline: 2px solid var(--color-accent-border);
+    border-color: var(--color-accent);
   }
 
   .stat-chip {
@@ -361,6 +519,23 @@
     gap: 8px;
   }
 
+  .history-load-more {
+    padding: 12px 16px;
+    text-align: center;
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    border: 1px dashed rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-sm);
+  }
+
+  .history-load-more.end {
+    color: var(--text-secondary);
+  }
+
+  .history-sentinel {
+    height: 1px;
+  }
+
   .history-item {
     display: flex;
     align-items: center;
@@ -456,6 +631,11 @@
       flex: 1;
       justify-content: center;
       white-space: nowrap;
+    }
+
+    .page-size-group {
+      flex: 1;
+      justify-content: center;
     }
 
     .history-item {

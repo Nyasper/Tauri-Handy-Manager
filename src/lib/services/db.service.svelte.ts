@@ -34,12 +34,20 @@ export interface HistoryEntry {
   timestamp: string;
 }
 
+export const HISTORY_PAGE_SIZE_DEFAULT = 500;
+export const HISTORY_PAGE_SIZE_MIN = 50;
+export const HISTORY_PAGE_SIZE_MAX = 5000;
+
 /**
  * Servicio de base de datos SQLite (plugin Tauri) con estado reactivo.
  *
- * Mantiene sincronizados `handies`, `owners`, `areas` e `history` con la base
- * de datos y expone operaciones de creación/actualización/eliminación que
- * refrescan el estado tras cada cambio.
+ * Mantiene sincronizados `handies`, `owners`, `areas` y las métricas del
+ * historial con la base de datos y expone operaciones de
+ * creación/actualización/eliminación que refrescan el estado tras cada cambio.
+ *
+ * El historial no se carga completo en memoria: se consulta por páginas
+ * (`queryHistory`) y el tamaño de página es configurable por el usuario
+ * (`historyPageSize`, persistido en la tabla `settings`).
  */
 class HandyDB {
   private db: Database | null = null;
@@ -53,8 +61,12 @@ class HandyDB {
   // Available areas
   areas = $state<Area[]>([]);
 
-  // Link/unlink history (newest first)
-  history = $state<HistoryEntry[]>([]);
+  // History is paginated: only totals/counts and the user's page size stay in memory.
+  historyTotal = $state(0);
+  historyAssignCount = $state(0);
+  historyUnassignCount = $state(0);
+  historyEpoch = $state(0);
+  historyPageSize = $state(HISTORY_PAGE_SIZE_DEFAULT);
 
   // Map owner_id -> handy id for quick lookup
   handyByOwner = $derived(
@@ -116,6 +128,9 @@ class HandyDB {
       "CREATE TABLE IF NOT EXISTS handy_history (id INTEGER PRIMARY KEY AUTOINCREMENT, handy_id INTEGER NOT NULL, action TEXT NOT NULL, owner_id INTEGER, owner_name TEXT NOT NULL, timestamp TEXT NOT NULL)",
     );
     await this.db.execute(
+      "CREATE INDEX IF NOT EXISTS idx_handy_history_ts ON handy_history (timestamp DESC, id DESC)",
+    );
+    await this.db.execute(
       "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)",
     );
   }
@@ -124,7 +139,7 @@ class HandyDB {
   async refresh() {
     if (!this.db) return;
     try {
-      const [handies, owners, areas, history] = await Promise.all([
+      const [handies, owners, areas, counts, pageSizeSetting] = await Promise.all([
         this.db.select<Handy[]>(
           `SELECT h.id, h.fixed, h.owner_id, o.name AS owner_name, o.area_id, a.name AS area_name
            FROM handies h
@@ -139,15 +154,26 @@ class HandyDB {
            ORDER BY o.name COLLATE NOCASE ASC`,
         ),
         this.db.select<Area[]>("SELECT id, name FROM areas ORDER BY id ASC"),
-        this.db.select<HistoryEntry[]>(
-          "SELECT id, handy_id, action, owner_id, owner_name, timestamp FROM handy_history ORDER BY timestamp DESC, id DESC",
-        ),
+        this.getHistoryCounts(),
+        this.getSetting('history_page_size'),
       ]);
       this.error = null;
       this.handies = handies.map((h) => ({ ...h, fixed: !!h.fixed }));
       this.owners = owners;
       this.areas = areas;
-      this.history = history;
+      this.historyAssignCount = counts.assign;
+      this.historyUnassignCount = counts.unassign;
+      this.historyTotal = counts.total;
+      const parsedPageSize =
+        pageSizeSetting != null ? parseInt(pageSizeSetting, 10) : NaN;
+      if (
+        Number.isInteger(parsedPageSize) &&
+        parsedPageSize >= HISTORY_PAGE_SIZE_MIN &&
+        parsedPageSize <= HISTORY_PAGE_SIZE_MAX
+      ) {
+        this.historyPageSize = parsedPageSize;
+      }
+      this.historyEpoch += 1;
     } catch (e: any) {
       console.error("Error al recargar base de datos:", e);
       this.error = e.message || "Error al cargar los datos";
@@ -539,6 +565,88 @@ class HandyDB {
       ids,
     );
     await this.refresh();
+  }
+
+  /** Total counts per action, plus the overall total. */
+  async getHistoryCounts(): Promise<{ assign: number; unassign: number; total: number }> {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    const rows = await this.db.select<{ action: string | null; c: number }[]>(
+      "SELECT action, COUNT(*) AS c FROM handy_history GROUP BY action",
+    );
+    const assign = rows.find((r) => r.action === 'assign')?.c ?? 0;
+    const unassign = rows.find((r) => r.action === 'unassign')?.c ?? 0;
+    return { assign, unassign, total: assign + unassign };
+  }
+
+  /** Build the WHERE clause + params shared by history queries. */
+  private buildHistoryFilter(
+    action: HistoryAction | 'all',
+    term?: string,
+  ): { clause: string; params: unknown[] } {
+    const where: string[] = [];
+    const params: unknown[] = [];
+    if (action && action !== 'all') {
+      where.push('action = ?');
+      params.push(action);
+    }
+    const text = term?.trim();
+    if (text) {
+      const escaped = text.replace(/[\\%_]/g, (m) => `\\${m}`);
+      where.push(
+        "(owner_name COLLATE NOCASE LIKE ? ESCAPE '\\' OR CAST(handy_id AS TEXT) LIKE ? ESCAPE '\\')",
+      );
+      params.push(`%${escaped}%`, `%${escaped}%`);
+    }
+    return { clause: where.length ? `WHERE ${where.join(' AND ')}` : '', params };
+  }
+
+  /** Fetch one page of history entries plus the total number of matches. */
+  async queryHistory(opts: {
+    action?: HistoryAction | 'all';
+    term?: string;
+    limit: number;
+    offset: number;
+  }): Promise<{ entries: HistoryEntry[]; total: number }> {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    const { clause, params } = this.buildHistoryFilter(opts.action ?? 'all', opts.term);
+    const [{ total }] = await this.db.select<{ total: number }[]>(
+      `SELECT COUNT(*) AS total FROM handy_history ${clause}`,
+      params,
+    );
+    const entries = await this.db.select<HistoryEntry[]>(
+      `SELECT id, handy_id, action, owner_id, owner_name, timestamp
+       FROM handy_history ${clause}
+       ORDER BY timestamp DESC, id DESC
+       LIMIT ? OFFSET ?`,
+      [...params, opts.limit, opts.offset],
+    );
+    return { entries, total };
+  }
+
+  /** Fetch all history entries matching the given filter (used by CSV export). */
+  async exportHistory(
+    action: HistoryAction | 'all',
+    term?: string,
+  ): Promise<HistoryEntry[]> {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    const { clause, params } = this.buildHistoryFilter(action, term);
+    return this.db.select<HistoryEntry[]>(
+      `SELECT id, handy_id, action, owner_id, owner_name, timestamp
+       FROM handy_history ${clause}
+       ORDER BY timestamp DESC, id DESC`,
+      params,
+    );
+  }
+
+  /** Set and persist the number of history rows loaded per page. */
+  async setHistoryPageSize(n: number) {
+    if (!this.db) throw new Error("La base de datos no está inicializada");
+    if (!Number.isInteger(n)) {
+      throw new Error("La cantidad debe ser un número entero");
+    }
+    const clamped = Math.min(Math.max(n, HISTORY_PAGE_SIZE_MIN), HISTORY_PAGE_SIZE_MAX);
+    this.historyPageSize = clamped;
+    await this.setSetting('history_page_size', String(clamped));
   }
 }
 

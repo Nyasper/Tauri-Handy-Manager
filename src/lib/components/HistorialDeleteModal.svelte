@@ -122,7 +122,7 @@
     if (!(await checkPassword())) return;
 
     try {
-      const total = handyDB.history.length;
+      const total = handyDB.historyTotal;
       const deleted = Math.min(n, total);
       await handyDB.deleteRecentHistory(n);
       recentCount = '';
@@ -149,7 +149,7 @@
     if (!(await checkPassword())) return;
 
     try {
-      const total = handyDB.history.length;
+      const total = handyDB.historyTotal;
       const deleted = Math.min(n, total);
       await handyDB.deleteOldestHistory(n);
       oldestCount = '';
@@ -163,7 +163,7 @@
     clearFeedback();
     const confirmed = await modalService.confirm({
       title: 'Borrar todo el historial',
-      message: `¿Borrar TODO el historial (${handyDB.history.length} entradas)? Esta acción no se puede deshacer.`,
+      message: `¿Borrar TODO el historial (${handyDB.historyTotal} entradas)? Esta acción no se puede deshacer.`,
       confirmLabel: 'Borrar todo',
       danger: true,
     });
