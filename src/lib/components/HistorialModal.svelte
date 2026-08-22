@@ -351,6 +351,9 @@
                 {:else}
                   Se desvinculó de <strong>{entry.owner_name}</strong>
                 {/if}
+                {#if entry.area_name}
+                  <span class="area-badge history-area">{entry.area_name}</span>
+                {/if}
               </span>
               <span class="history-date">{formatDate(entry.timestamp)}</span>
             </div>
@@ -720,6 +723,11 @@
   .history-action {
     font-size: 0.9rem;
     color: var(--text-primary);
+  }
+
+  .history-action .history-area {
+    margin-left: 8px;
+    vertical-align: middle;
   }
 
   .history-action strong {

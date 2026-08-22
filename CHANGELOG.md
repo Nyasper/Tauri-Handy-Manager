@@ -51,7 +51,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 ### Cambiado
 
 - El indicador del historial pasa de "Mostrando x de x" a **"x Registros Totales"** (total de coincidencias con el filtro aplicado).
-- Los handies fijados ya no se pueden desvincular ni reasignar: hay que desfijarlos primero. El modal de asignación muestra un aviso con un botón **Desfijar**, el menú contextual oculta "Revocar Asignación" y "Reasignar handy" para ellos, y la capa de datos lo valida.
+- Los handies fijados ya no se pueden desvincular ni reasignar: hay que desfijarlos primero. El modal de asignación muestra un aviso con un botón **Desfijar**, el menú contextual oculta "Liberar Handy" y "Reasignar handy" para ellos, y la capa de datos lo valida.
 - Los handies fijados ya no se agrupan en una sección separada **Fijados**: se muestran junto al resto en la **Lista de Handies**, conservando su color amarillo que los diferencia.
 - La pestaña "Áreas" de Administración reemplaza el formulario inline "Nueva área" por un header "{n} areas" con el botón "Agregar área", que solicita el nombre mediante un diálogo.
 - El toast de Administración flota justo debajo del modal (sin bloquear la interacción) y los mensajes de éxito/error incluyen el dato afectado (ej. `Funcionario "Juan" eliminado con éxito`, `Área "Seguridad" renombrada a "Patrimonio"`).

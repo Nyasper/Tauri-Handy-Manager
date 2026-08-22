@@ -82,7 +82,7 @@
       items = [];
       if (!handy.fixed) {
         items.push(
-          { label: 'Revocar Asignación', action: () => handyDB.unassign(handy.id) },
+          { label: 'Liberar Handy', action: () => handyDB.unassign(handy.id) },
           { isSeparator: true },
           { label: 'Reasignar handy', action: () => openAssignModal(handy.id) },
           { isSeparator: true },

@@ -31,6 +31,7 @@ export interface HistoryEntry {
   action: HistoryAction;
   owner_id: number | null;
   owner_name: string;
+  area_name: string | null;
   timestamp: string;
 }
 
@@ -654,7 +655,7 @@ class HandyDB {
       params,
     );
     const entries = await this.db.select<HistoryEntry[]>(
-      `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, h.timestamp
+      `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, a.name AS area_name, h.timestamp
        FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}
        ORDER BY h.timestamp DESC, h.id DESC
        LIMIT ? OFFSET ?`,
@@ -673,7 +674,7 @@ class HandyDB {
     if (!this.db) throw new Error("La base de datos no está inicializada");
     const { clause, params } = this.buildHistoryFilter(action, term, from, to);
     return this.db.select<HistoryEntry[]>(
-      `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, h.timestamp
+      `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, a.name AS area_name, h.timestamp
        FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}
        ORDER BY h.timestamp DESC, h.id DESC`,
       params,

@@ -250,7 +250,7 @@
                 </button>
               {/if}
               <button type="button" class="btn-danger" onclick={handleUnassign}>
-                Desvincular
+                Liberar Handy
               </button>
             {:else}
               <button type="submit" class="btn-primary w-full" disabled={!canSubmit}>
@@ -378,7 +378,7 @@
     gap: 8px;
     max-height: 230px;
     overflow-y: auto;
-    padding-right: 4px;
+    padding: 4px;
   }
 
   .owner-item {
