@@ -42,6 +42,7 @@
         if (activeFilter === 'free' && h.owner_id !== null) return false;
         if (term) {
           return (
+            String(h.id) === term ||
             (h.owner_name ?? '').toLowerCase().includes(term) ||
             (h.area_name ?? '').toLowerCase().includes(term)
           );

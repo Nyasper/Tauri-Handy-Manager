@@ -61,7 +61,8 @@
       {/if}
     </div>
 
-    <div class="radio-led"></div>
+    <!-- Glowing indicator dot -->
+    <div class="indicator-dot"></div>
   </button>
 </div>
 
@@ -74,18 +75,19 @@
   .handy-card {
     appearance: none;
     display: flex;
-    flex-direction: row;
+    flex-direction: column;
     align-items: center;
-    gap: 14px;
+    justify-content: center;
     width: 100%;
-    min-height: 110px;
-    padding: 14px 16px;
-    text-align: left;
+    padding: 14px 10px 16px;
+    text-align: center;
+    gap: 8px;
     cursor: pointer;
     position: relative;
     border-radius: var(--radius-md);
     user-select: none;
     overflow: hidden;
+    height: 160px;
     color: inherit;
     font-family: inherit;
     font-size: inherit;
@@ -97,7 +99,7 @@
   }
 
   .handy-card:hover {
-    transform: translateY(-2px);
+    transform: translateY(-4px);
     box-shadow: 0 12px 28px rgba(0, 0, 0, 0.5), 0 0 0 1px var(--border-1);
   }
 
@@ -106,96 +108,10 @@
     outline-offset: 2px;
   }
 
-  .handy-badge {
-    width: 44px;
-    height: 44px;
-    border-radius: 50%;
-    background: var(--surface-1);
-    border: 1px solid var(--border-2);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    flex-shrink: 0;
-    transition: all var(--transition-fast);
-  }
-
-  .handy-card.assigned .handy-badge {
-    border-color: var(--color-success);
-    background: rgba(16, 185, 129, 0.1);
-    box-shadow: 0 0 10px var(--color-success-glow);
-  }
-
-  .handy-number {
-    font-family: var(--font-header);
-    font-size: 1.15rem;
-    font-weight: 700;
-    color: var(--text-primary);
-  }
-
-  .handy-card.assigned .handy-number {
-    color: var(--color-success);
-  }
-
-  .handy-info {
-    display: flex;
-    flex-direction: column;
-    gap: 3px;
-    min-width: 0;
-    flex: 1;
-  }
-
-  .handy-title {
-    font-size: 0.9rem;
-    font-weight: 600;
-    color: var(--text-primary);
-  }
-
-  .handy-status {
-    font-size: 0.78rem;
-    font-weight: 500;
-    white-space: normal;
-    word-break: break-word;
-    display: block;
-  }
-
-  .handy-area {
-    font-size: 0.72rem;
-    font-weight: 400;
-    white-space: normal;
-    word-break: break-word;
-    display: block;
-  }
-
-  .text-success {
-    color: var(--color-success);
-  }
-
-  .text-muted {
-    color: var(--text-muted);
-  }
-
-  .radio-led {
-    width: 8px;
-    height: 8px;
-    border-radius: 50%;
-    background: var(--text-muted);
-    flex-shrink: 0;
-  }
-
-  .handy-card.assigned .radio-led {
-    background: var(--color-success);
-    box-shadow: 0 0 8px var(--color-success);
-  }
-
-  .handy-card-wrap.pinned .radio-led {
-    background: #fbbf24;
-    box-shadow: 0 0 8px rgba(245, 158, 11, 0.7);
-  }
-
   .pin-btn {
     position: absolute;
-    top: 10px;
-    right: 10px;
+    top: 8px;
+    right: 8px;
     width: 26px;
     height: 26px;
     display: flex;
@@ -227,20 +143,96 @@
     color: #fbbf24;
   }
 
-  @media (max-width: 480px) {
-    .handy-card {
-      min-height: 100px;
-      padding: 12px 14px;
-      gap: 12px;
-    }
+  .handy-badge {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    background: var(--surface-1);
+    border: 1px solid var(--border-2);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-shrink: 0;
+    transition: all var(--transition-fast);
+  }
 
+  .handy-card.assigned .handy-badge {
+    border-color: var(--color-success);
+    background: rgba(16, 185, 129, 0.1);
+  }
+
+  .handy-number {
+    font-family: var(--font-header);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+
+  .handy-card.assigned .handy-number {
+    color: var(--color-success);
+  }
+
+  .handy-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+  }
+
+  .handy-title {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--text-primary);
+  }
+
+  .handy-status {
+    font-size: 0.75rem;
+    font-weight: 500;
+    white-space: normal;
+    word-break: break-word;
+    display: block;
+    width: 100%;
+  }
+
+  .handy-area {
+    font-size: 0.7rem;
+    font-weight: 400;
+    white-space: normal;
+    word-break: break-word;
+    display: block;
+    width: 100%;
+  }
+
+  .text-success {
+    color: var(--color-success);
+  }
+
+  .text-muted {
+    color: var(--text-muted);
+  }
+
+  .indicator-dot {
+    position: absolute;
+    top: 12px;
+    left: 12px;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--text-muted);
+  }
+
+  .handy-card.assigned .indicator-dot {
+    background: var(--color-success);
+    box-shadow: 0 0 8px var(--color-success);
+  }
+
+  @media (max-width: 480px) {
     .handy-badge {
-      width: 40px;
-      height: 40px;
+      width: 36px;
+      height: 36px;
     }
 
     .handy-number {
-      font-size: 1rem;
+      font-size: 0.95rem;
     }
   }
 </style>
