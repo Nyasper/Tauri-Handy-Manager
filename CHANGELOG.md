@@ -46,6 +46,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 - "Exportar a CSV" y "Copia de seguridad" quedan agrupados y siempre en la misma fila en cualquier ancho.
 - El export a CSV siempre refleja la vista filtrada actual (usa la misma búsqueda debounced que la lista).
 - Si solo se selecciona la fecha "desde" en el historial, el campo "hasta" se completa automáticamente con la fecha de hoy.
+- La búsqueda del historial ahora también filtra por **área** del funcionario (además de nombre y # de handy), igual que la lista principal; aplica también al export CSV.
 
 ### Cambiado
 

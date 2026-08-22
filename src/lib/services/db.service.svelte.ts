@@ -590,6 +590,10 @@ class HandyDB {
     return { assign, unassign, total: assign + unassign };
   }
 
+  /** JOINs que exponen el área actual del dueño para buscar/filtrar el historial. */
+  private static readonly HISTORY_JOINS =
+    'LEFT JOIN owners o ON o.id = h.owner_id LEFT JOIN areas a ON a.id = o.area_id';
+
   /** Build the WHERE clause + params shared by history queries. */
   private buildHistoryFilter(
     action: HistoryAction | 'all',
@@ -600,28 +604,28 @@ class HandyDB {
     const where: string[] = [];
     const params: unknown[] = [];
     if (action && action !== 'all') {
-      where.push('action = ?');
+      where.push('h.action = ?');
       params.push(action);
     }
     const text = term?.trim();
     if (text) {
       const escaped = text.replace(/[\\%_]/g, (m) => `\\${m}`);
       where.push(
-        "(owner_name COLLATE NOCASE LIKE ? ESCAPE '\\' OR CAST(handy_id AS TEXT) LIKE ? ESCAPE '\\')",
+        "(h.owner_name COLLATE NOCASE LIKE ? ESCAPE '\\' OR CAST(h.handy_id AS TEXT) LIKE ? ESCAPE '\\' OR a.name COLLATE NOCASE LIKE ? ESCAPE '\\')",
       );
-      params.push(`%${escaped}%`, `%${escaped}%`);
+      params.push(`%${escaped}%`, `%${escaped}%`, `%${escaped}%`);
     }
     if (from) {
       const start = new Date(`${from}T00:00:00`);
       if (!Number.isNaN(start.getTime())) {
-        where.push('timestamp >= ?');
+        where.push('h.timestamp >= ?');
         params.push(start.toISOString());
       }
     }
     if (to) {
       const end = new Date(`${to}T23:59:59.999`);
       if (!Number.isNaN(end.getTime())) {
-        where.push('timestamp <= ?');
+        where.push('h.timestamp <= ?');
         params.push(end.toISOString());
       }
     }
@@ -645,13 +649,14 @@ class HandyDB {
       opts.to,
     );
     const [{ total }] = await this.db.select<{ total: number }[]>(
-      `SELECT COUNT(*) AS total FROM handy_history ${clause}`,
+      `SELECT COUNT(*) AS total
+       FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}`,
       params,
     );
     const entries = await this.db.select<HistoryEntry[]>(
-      `SELECT id, handy_id, action, owner_id, owner_name, timestamp
-       FROM handy_history ${clause}
-       ORDER BY timestamp DESC, id DESC
+      `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, h.timestamp
+       FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}
+       ORDER BY h.timestamp DESC, h.id DESC
        LIMIT ? OFFSET ?`,
       [...params, opts.limit, opts.offset],
     );
@@ -668,9 +673,9 @@ class HandyDB {
     if (!this.db) throw new Error("La base de datos no está inicializada");
     const { clause, params } = this.buildHistoryFilter(action, term, from, to);
     return this.db.select<HistoryEntry[]>(
-      `SELECT id, handy_id, action, owner_id, owner_name, timestamp
-       FROM handy_history ${clause}
-       ORDER BY timestamp DESC, id DESC`,
+      `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, h.timestamp
+       FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}
+       ORDER BY h.timestamp DESC, h.id DESC`,
       params,
     );
   }

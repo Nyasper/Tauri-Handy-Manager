@@ -332,7 +332,7 @@
         <SearchInput
           id="history-search"
           bind:value={searchInput}
-          placeholder="Buscar por funcionario o # de handy..."
+          placeholder="Buscar por funcionario, # de handy o área..."
         />
       </div>
     </div>
