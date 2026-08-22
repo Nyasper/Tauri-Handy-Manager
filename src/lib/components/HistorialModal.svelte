@@ -162,6 +162,22 @@
     toDate = '';
   }
 
+  function todayISO(): string {
+    const d = new Date();
+    const pad = (n: number) => String(n).padStart(2, '0');
+    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+  }
+
+  // Si solo se selecciona "desde", acotar "hasta" a hoy.
+  $effect(() => {
+    if (fromDate && !toDate) {
+      const today = todayISO();
+      if (fromDate <= today) {
+        toDate = today;
+      }
+    }
+  });
+
   async function exportCsv() {
     exportError = null;
     exportSuccess = null;
@@ -169,7 +185,7 @@
     try {
       all = await handyDB.exportHistory(
         actionFilter,
-        searchInput,
+        debouncedSearch,
         fromDate || undefined,
         toDate || undefined,
       );
@@ -209,19 +225,12 @@
 <AppModal title="Historial" maxWidth="680px" {onclose}>
   <div class="modal-body">
     <div class="history-toolbar">
-      <SearchInput
-        id="history-search"
-        bind:value={searchInput}
-        placeholder="Buscar por funcionario o # de handy..."
-      />
-      <div class="history-stats">
-        <span class="history-count" title="Registros cargados vs. total de coincidencias">
+      <div class="history-controls">
+        <span class="history-count" title="Total de registros que coinciden con el filtro">
           {#if loading && entries.length === 0}
             Cargando...
-          {:else if total === 0}
-            0 registros
           {:else}
-            Mostrando {entries.length} de {total}
+            {total} Registros Totales
           {/if}
         </span>
         <button
@@ -273,33 +282,35 @@
             </svg>
           </button>
         </div>
-        <button
-          type="button"
-          class="export-btn"
-          onclick={exportCsv}
-          disabled={exporting}
-          title="Exportar historial a CSV"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-            <polyline points="7 10 12 15 17 10"></polyline>
-            <line x1="12" y1="15" x2="12" y2="3"></line>
-          </svg>
-          {exporting ? 'Exportando...' : 'Exportar a CSV'}
-        </button>
-        <button
-          type="button"
-          class="backup-btn"
-          onclick={() => (showBackupModal = true)}
-          title="Crear o restaurar copias de seguridad"
-        >
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-            <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
-            <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
-            <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
-          </svg>
-          Copia de seguridad
-        </button>
+        <div class="history-export-group">
+          <button
+            type="button"
+            class="export-btn"
+            onclick={exportCsv}
+            disabled={exporting}
+            title="Exportar historial a CSV"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            {exporting ? 'Exportando...' : 'Exportar a CSV'}
+          </button>
+          <button
+            type="button"
+            class="backup-btn"
+            onclick={() => (showBackupModal = true)}
+            title="Crear o restaurar copias de seguridad"
+          >
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <ellipse cx="12" cy="5" rx="9" ry="3"></ellipse>
+              <path d="M21 12c0 1.66-4 3-9 3s-9-1.34-9-3"></path>
+              <path d="M3 5v14c0 1.66 4 3 9 3s9-1.34 9-3V5"></path>
+            </svg>
+            Copia de seguridad
+          </button>
+        </div>
         <button
           type="button"
           class="delete-btn"
@@ -315,6 +326,14 @@
           </svg>
           Eliminar
         </button>
+      </div>
+
+      <div class="history-search">
+        <SearchInput
+          id="history-search"
+          bind:value={searchInput}
+          placeholder="Buscar por funcionario o # de handy..."
+        />
       </div>
     </div>
 
@@ -386,10 +405,9 @@
     top: 0;
     z-index: 10;
     display: flex;
-    justify-content: space-between;
-    align-items: center;
+    flex-direction: column;
+    align-items: stretch;
     gap: 12px;
-    flex-wrap: wrap;
     margin: -20px -24px 0;
     padding: 20px 24px 16px;
     background: linear-gradient(
@@ -400,26 +418,36 @@
     );
   }
 
-  .history-toolbar :global(.search-group) {
-    flex: 1;
-    min-width: 200px;
+  .history-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
   }
 
-  .history-stats {
+  .history-export-group {
     display: flex;
+    align-items: center;
     gap: 8px;
-    flex-wrap: wrap;
-    justify-content: flex-end;
+  }
+
+  .history-search {
+    width: 100%;
+  }
+
+  .history-search :global(.search-group) {
+    width: 100%;
   }
 
   .history-count {
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 36px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-1);
     color: var(--text-secondary);
-    padding: 8px 12px;
+    padding: 0 14px;
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -439,10 +467,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 36px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-1);
     color: var(--text-secondary);
-    padding: 6px 12px;
+    padding: 0 12px;
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -509,10 +538,11 @@
     display: flex;
     align-items: center;
     gap: 8px;
+    height: 36px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-1);
     color: var(--text-secondary);
-    padding: 8px 12px;
+    padding: 0 14px;
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -544,11 +574,12 @@
   .export-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    height: 36px;
     background: rgba(16, 185, 129, 0.05);
     border: 1px solid rgba(16, 185, 129, 0.25);
     color: var(--color-success);
-    padding: 8px 12px;
+    padding: 0 14px;
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -574,11 +605,12 @@
   .backup-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    height: 36px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-2);
     color: var(--color-accent);
-    padding: 8px 12px;
+    padding: 0 14px;
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -599,11 +631,12 @@
   .delete-btn {
     display: flex;
     align-items: center;
-    gap: 6px;
+    gap: 8px;
+    height: 36px;
     background: rgba(244, 63, 94, 0.05);
     border: 1px solid rgba(244, 63, 94, 0.2);
     color: var(--color-danger);
-    padding: 8px 12px;
+    padding: 0 14px;
     border-radius: var(--radius-sm);
     font-family: var(--font-body);
     font-size: 0.85rem;
@@ -727,9 +760,13 @@
       padding: 14px 16px 16px;
     }
 
-    .history-stats {
+    .history-controls {
       flex-wrap: wrap;
       justify-content: center;
+    }
+
+    .history-export-group {
+      flex: 1;
     }
 
     .stat-chip,

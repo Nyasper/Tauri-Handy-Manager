@@ -42,9 +42,14 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 - El buscador de funcionarios en Administración queda fijo (sticky) junto a las pestañas al scrollear el listado.
 - Los toasts de todos los modals (Administración, Historial, Seguridad, Copia de seguridad y Asignación) se auto-descartan a los 3 segundos.
 - Las tarjetas de handy pasan a un formato horizontal compacto: el número a la izquierda, la información (Handy + dueño/área o Libre) al centro y un LED de estado a la derecha, reduciendo el espacio vertical que ocupaba el diseño anterior tipo radio.
+- El encabezado del modal Historial se rediseñó: los controles (total, filtros de acción, rango de fechas, exportar, copia de seguridad y eliminar) se muestran en una fila uniforme, y el buscador pasa a ocupar todo el ancho debajo de ellos, antes de los registros.
+- "Exportar a CSV" y "Copia de seguridad" quedan agrupados y siempre en la misma fila en cualquier ancho.
+- El export a CSV siempre refleja la vista filtrada actual (usa la misma búsqueda debounced que la lista).
+- Si solo se selecciona la fecha "desde" en el historial, el campo "hasta" se completa automáticamente con la fecha de hoy.
 
 ### Cambiado
 
+- El indicador del historial pasa de "Mostrando x de x" a **"x Registros Totales"** (total de coincidencias con el filtro aplicado).
 - Los handies fijados ya no se pueden desvincular ni reasignar: hay que desfijarlos primero. El modal de asignación muestra un aviso con un botón **Desfijar**, el menú contextual oculta "Revocar Asignación" y "Reasignar handy" para ellos, y la capa de datos lo valida.
 - Los handies fijados ya no se agrupan en una sección separada **Fijados**: se muestran junto al resto en la **Lista de Handies**, conservando su color amarillo que los diferencia.
 - La pestaña "Áreas" de Administración reemplaza el formulario inline "Nueva área" por un header "{n} areas" con el botón "Agregar área", que solicita el nombre mediante un diálogo.
