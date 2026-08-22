@@ -769,27 +769,45 @@
     }
 
     .history-controls {
-      flex-wrap: wrap;
+      display: flex;
+      flex-direction: column;
+      align-items: stretch;
+      gap: 8px;
+    }
+
+    .history-count,
+    .stat-chip,
+    .delete-btn {
+      width: 100%;
+      min-width: 0;
       justify-content: center;
     }
 
     .history-export-group {
-      flex: 1;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
     }
 
-    .stat-chip,
     .export-btn,
-    .backup-btn,
-    .delete-btn,
-    .history-count {
-      flex: 1;
+    .backup-btn {
+      width: 100%;
+      min-width: 0;
       justify-content: center;
-      white-space: nowrap;
+      overflow: hidden;
     }
 
     .date-range-group {
-      flex: 1;
+      width: 100%;
       justify-content: center;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+
+    .date-range-group input[type='date'] {
+      flex: 1;
+      min-width: 0;
     }
 
     .history-item {
