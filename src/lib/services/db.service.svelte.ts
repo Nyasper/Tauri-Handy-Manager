@@ -657,7 +657,7 @@ class HandyDB {
     const entries = await this.db.select<HistoryEntry[]>(
       `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, a.name AS area_name, h.timestamp
        FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}
-       ORDER BY h.timestamp DESC, h.id DESC
+       ORDER BY h.id DESC
        LIMIT ? OFFSET ?`,
       [...params, opts.limit, opts.offset],
     );
@@ -676,7 +676,7 @@ class HandyDB {
     return this.db.select<HistoryEntry[]>(
       `SELECT h.id, h.handy_id, h.action, h.owner_id, h.owner_name, a.name AS area_name, h.timestamp
        FROM handy_history h ${HandyDB.HISTORY_JOINS} ${clause}
-       ORDER BY h.timestamp DESC, h.id DESC`,
+       ORDER BY h.id DESC`,
       params,
     );
   }
