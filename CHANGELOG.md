@@ -6,6 +6,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-08-21
+
 ### Agregado
 
 - Al asignar un handy, si el nombre escrito no existe, el botón principal crea el funcionario y lo asigna automáticamente en un solo paso.

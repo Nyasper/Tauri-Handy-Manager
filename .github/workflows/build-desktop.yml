@@ -133,5 +133,5 @@ jobs:
         run: |
           gh release create "${{ github.ref_name }}" \
             --title "handy-manager ${{ github.ref_name }}" \
-            --notes "Binarios generados automáticamente: instalador NSIS, .exe portable, .deb, .rpm y binario portable Linux." \
+            --notes-file CHANGELOG.md \
             $(find dist -type f)
