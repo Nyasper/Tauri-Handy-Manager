@@ -24,6 +24,7 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ### Cambiado
 
+- Migrar la sintaxis `{@const ...}` a los nuevos *declaration tags* `{const ...}` de Svelte 5.56+ (la forma `@const` queda deprecada), en las tarjetas de handy, los modales de asignación y administración y la página principal.
 - Remover código sin uso en el servicio de base de datos (`assign`, `updateAssignee`) y simplificar la interpolación de clases dinámicas en `SearchInput` y `Alert`.
 
 ## [3.0.0] - 2026-08-21

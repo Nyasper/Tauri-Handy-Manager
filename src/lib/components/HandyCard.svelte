@@ -63,7 +63,7 @@
   </button>
 
   {#if handy.owner_id != null && handy.area_name}
-    {@const ownerId = handy.owner_id}
+    {const ownerId = handy.owner_id}
     <button
       type="button"
       class="area-badge-btn"

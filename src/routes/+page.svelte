@@ -157,7 +157,7 @@
 {/if}
 
 {#if areaPickerOwnerId !== null}
-  {@const areaOwner = handyDB.owners.find((o) => o.id === areaPickerOwnerId)}
+  {const areaOwner = handyDB.owners.find((o) => o.id === areaPickerOwnerId)}
   {#if areaOwner}
     <AreaPickerModal
       ownerName={areaOwner.name}

@@ -180,7 +180,7 @@
 
             <div class="owners-list" data-nav-section="list">
               {#each filteredOwners as owner (owner.id)}
-                {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
+                {const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
                 <div
                   class="owner-row"
                   class:selected={selectedOwnerId === owner.id}
@@ -263,7 +263,7 @@
 {/if}
 
 {#if areaPickerOwner}
-  {@const pickerOwner = areaPickerOwner}
+  {const pickerOwner = areaPickerOwner}
   <AreaPickerModal
     ownerName={pickerOwner.name}
     currentAreaId={pickerOwner.area_id}

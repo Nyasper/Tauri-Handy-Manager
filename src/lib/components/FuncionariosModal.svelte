@@ -291,7 +291,7 @@
     <div class="modal-body">
       <div class="funcionarios-list" data-nav-section="list">
         {#each filteredOwners as owner (owner.id)}
-          {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
+          {const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
           <div class="row-item">
             <div class="row-info">
               <span class="row-name">{owner.name}</span>
@@ -360,7 +360,7 @@
         </div>
         <div class="funcionarios-list" data-nav-section="list">
           {#each handyDB.areas as area (area.id)}
-            {@const isDefaultArea = area.name.trim().toLowerCase() === 'otro'}
+            {const isDefaultArea = area.name.trim().toLowerCase() === 'otro'}
             <div class="row-item">
               <div class="row-info">
                 <span class="row-name">
