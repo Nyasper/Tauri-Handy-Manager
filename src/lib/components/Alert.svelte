@@ -5,19 +5,26 @@
     type,
     icon = true,
     class: className = '',
+    onclick,
     children,
   }: {
     type: 'danger' | 'success';
     icon?: boolean;
     class?: string;
+    onclick?: () => void;
     children: Snippet;
   } = $props();
 </script>
 
-<div
-  class={`alert ${className}`.trim()}
+<!-- When clickable the root is a <button> (a11y-safe); the linter can't see the dynamic tag -->
+<!-- svelte-ignore a11y_no_static_element_interactions -->
+<svelte:element
+  this={onclick ? 'button' : 'div'}
+  type={onclick ? 'button' : undefined}
+  class="alert {className}"
   class:alert-danger={type === 'danger'}
   class:alert-success={type === 'success'}
+  {onclick}
 >
   {#if icon}
     {#if type === 'danger'}
@@ -34,7 +41,7 @@
     {/if}
   {/if}
   <span>{@render children()}</span>
-</div>
+</svelte:element>
 
 <style>
   .alert {
@@ -45,6 +52,20 @@
     border-radius: var(--radius-sm);
     font-size: 0.85rem;
     line-height: 1.5;
+  }
+
+  /* Clickable variant: reset button defaults and remove the app-wide hover ring */
+  button.alert {
+    appearance: none;
+    width: 100%;
+    text-align: left;
+    font-family: var(--font-body);
+    font-size: inherit;
+    cursor: pointer;
+  }
+
+  button.alert:hover {
+    outline: none;
   }
 
   .alert-icon {

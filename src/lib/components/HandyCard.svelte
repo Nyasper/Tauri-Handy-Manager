@@ -7,12 +7,14 @@
     pinned = false,
     onassign,
     onpin,
+    onarea,
     oncontextmenu,
   }: {
     handy: Handy;
     pinned?: boolean;
     onassign: () => void;
     onpin: () => void;
+    onarea: (ownerId: number) => void;
     oncontextmenu: (e: MouseEvent) => void;
   } = $props();
 </script>
@@ -51,11 +53,6 @@
         <span class="handy-status text-success" title={handy.owner_name}>
           {handy.owner_name}
         </span>
-        {#if handy.area_name}
-          <span class="handy-area text-muted" title={handy.area_name}>
-            {handy.area_name}
-          </span>
-        {/if}
       {:else}
         <span class="handy-status text-muted">Libre</span>
       {/if}
@@ -64,6 +61,19 @@
     <!-- Glowing indicator dot -->
     <div class="indicator-dot"></div>
   </button>
+
+  {#if handy.owner_id != null && handy.area_name}
+    {@const ownerId = handy.owner_id}
+    <button
+      type="button"
+      class="area-badge-btn"
+      title={`Cambiar área de ${handy.owner_name}`}
+      onclick={() => onarea(ownerId)}
+    >
+      <span class="area-dot"></span>
+      <span class="area-label">{handy.area_name}</span>
+    </button>
+  {/if}
 </div>
 
 <style>
@@ -143,6 +153,54 @@
     color: #fbbf24;
   }
 
+  .area-badge-btn {
+    position: absolute;
+    bottom: 6px;
+    left: 50%;
+    transform: translateX(-50%);
+    z-index: 2;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    max-width: calc(100% - 12px);
+    padding: 3px 9px;
+    border-radius: 999px;
+    background: var(--surface-1);
+    border: 1px solid var(--border-2);
+    color: var(--text-secondary);
+    font-family: var(--font-body);
+    font-size: 0.65rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: all var(--transition-fast);
+  }
+
+  .area-badge-btn:hover {
+    background: var(--surface-hover);
+    border-color: var(--color-accent-border);
+    color: var(--color-accent);
+  }
+
+  .area-badge-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
+  }
+
+  .area-badge-btn .area-dot {
+    flex-shrink: 0;
+    width: 6px;
+    height: 6px;
+    border-radius: 50%;
+    background: var(--color-accent);
+  }
+
+  .area-badge-btn .area-label {
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
   .handy-badge {
     width: 40px;
     height: 40px;
@@ -187,15 +245,6 @@
   .handy-status {
     font-size: 0.75rem;
     font-weight: 500;
-    white-space: normal;
-    word-break: break-word;
-    display: block;
-    width: 100%;
-  }
-
-  .handy-area {
-    font-size: 0.7rem;
-    font-weight: 400;
     white-space: normal;
     word-break: break-word;
     display: block;

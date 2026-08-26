@@ -5,14 +5,17 @@
   import FuncionariosModal from '$lib/components/FuncionariosModal.svelte';
   import HistorialModal from '$lib/components/HistorialModal.svelte';
   import HandyAssignModal from '$lib/components/HandyAssignModal.svelte';
+  import AreaPickerModal from '$lib/components/AreaPickerModal.svelte';
   import { contextMenu, type ContextMenuItem } from '$lib/services/context-menu.service.svelte';
   import { shortcuts } from '$lib/services/shortcuts.service.svelte';
+  import { toastService } from '$lib/services/toast.service.svelte';
 
   let filterInput = $state('');
   let activeFilter = $state<'all' | 'assigned' | 'free'>('all');
   let showFuncionariosModal = $state(false);
   let showHistorialModal = $state(false);
   let assignHandyId = $state<number | null>(null);
+  let areaPickerOwnerId = $state<number | null>(null);
 
   // Expose app actions to the global keyboard shortcuts service
   $effect(() => {
@@ -119,6 +122,7 @@
     bind:filterInput
     onassign={openAssignModal}
     onpin={(id) => handyDB.toggleFixed(id)}
+    onarea={(ownerId) => (areaPickerOwnerId = ownerId)}
     oncontextmenu={handleHandyContextMenu}
   />
 
@@ -132,6 +136,23 @@
 
 {#if assignHandyId !== null}
   <HandyAssignModal handy={assignHandy} onclose={() => (assignHandyId = null)} />
+{/if}
+
+{#if areaPickerOwnerId !== null}
+  {@const areaOwner = handyDB.owners.find((o) => o.id === areaPickerOwnerId)}
+  {#if areaOwner}
+    <AreaPickerModal
+      ownerName={areaOwner.name}
+      currentAreaId={areaOwner.area_id}
+      onclose={() => (areaPickerOwnerId = null)}
+      onconfirm={async (areaId) => {
+        await handyDB.updateOwnerArea(areaOwner.id, areaId);
+        toastService.success(
+          `Área de "${areaOwner.name}" cambiada a "${handyDB.areas.find((a) => a.id === areaId)?.name}"`,
+        );
+      }}
+    />
+  {/if}
 {/if}
 
 {#if showFuncionariosModal}

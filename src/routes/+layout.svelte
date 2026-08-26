@@ -2,6 +2,7 @@
   import { handyDB } from '$lib/services/db.service.svelte';
   import ContextMenu from '$lib/components/ContextMenu.svelte';
   import ModalHost from '$lib/components/ModalHost.svelte';
+  import ToastHost from '$lib/components/ToastHost.svelte';
   import '../app.css';
 
   let { children } = $props();
@@ -31,6 +32,7 @@
 
 <ContextMenu />
 <ModalHost />
+<ToastHost />
 
 <style>
   .loading-screen, .error-screen {

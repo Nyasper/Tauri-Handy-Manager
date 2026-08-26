@@ -6,11 +6,13 @@
     handies,
     onassign,
     onpin,
+    onarea,
     oncontextmenu,
   }: {
     handies: Handy[];
     onassign: (id: number) => void;
     onpin: (id: number) => void;
+    onarea: (ownerId: number) => void;
     oncontextmenu: (e: MouseEvent, handy: Handy) => void;
   } = $props();
 </script>
@@ -23,6 +25,7 @@
         pinned={handy.fixed}
         onassign={() => onassign(handy.id)}
         onpin={() => onpin(handy.id)}
+        {onarea}
         oncontextmenu={(e) => oncontextmenu(e, handy)}
       />
     {/each}

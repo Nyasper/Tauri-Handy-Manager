@@ -11,6 +11,7 @@
     onclear,
     onassign,
     onpin,
+    onarea,
     oncontextmenu,
   }: {
     filteredHandies: Handy[];
@@ -19,6 +20,7 @@
     onclear: () => void;
     onassign: (id: number) => void;
     onpin: (id: number) => void;
+    onarea: (ownerId: number) => void;
     oncontextmenu: (e: MouseEvent, handy: Handy) => void;
   } = $props();
 </script>
@@ -54,6 +56,7 @@
       handies={filteredHandies}
       {onassign}
       {onpin}
+      {onarea}
       {oncontextmenu}
     />
 
