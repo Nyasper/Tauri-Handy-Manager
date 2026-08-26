@@ -32,7 +32,9 @@
 <div
   class="modal-overlay"
   role="presentation"
-  onclick={(e) => e.target === e.currentTarget && onclose()}
+  onclick={(e) => {
+    if (e.target === e.currentTarget) onclose();
+  }}
 >
   <div class="modal-panel glass-panel" style={`max-width: ${maxWidth}`} bind:this={panelEl}>
     <div class="modal-header">

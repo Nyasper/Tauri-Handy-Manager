@@ -10,6 +10,22 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 - La etiqueta del área en las tarjetas de la grid es clickeable y permite cambiar el área del funcionario al instante.
 
+### Corregido
+
+- El modal de historial ya no ejecuta una segunda consulta al elegir solo la fecha **desde**: el límite "hasta = hoy" se aplica en la query sin mutar el estado del filtro.
+- Las acciones del menú contextual de los handies (Liberar, Fijar/Desfijar) ahora muestran un toast de éxito o error, en lugar de fallar sin feedback visual.
+
+### Mejorado
+
+- Extraer el feedback inline (error/success con auto-descarte a los 3 segundos y cierre por clic) de los modales a un composable compartido `createFeedback()`, eliminando el bloque duplicado en 5 componentes (Administración, Historial, Seguridad, Copia de seguridad y Asignación).
+- Centralizar los helpers de fecha en `utils/dates.ts` (formato de fechas/horas y fecha de hoy) reutilizados por el historial, la exportación CSV y el nombre de las copias de seguridad.
+- Extraer a `db.service` los helpers de filtrado de funcionarios (`filterOwnersByTerm`, `canCreateOwner`) y unificar los flujos de creación/asignación del modal de asignación en un único `submitAssignment()`, reduciendo lógica repetida.
+- `HistorialDeleteModal` detecta la contraseña de seguridad con `$effect` en lugar de `onMount`.
+
+### Cambiado
+
+- Remover código sin uso en el servicio de base de datos (`assign`, `updateAssignee`) y simplificar la interpolación de clases dinámicas en `SearchInput` y `Alert`.
+
 ## [3.0.0] - 2026-08-21
 
 ### Agregado

@@ -5,12 +5,12 @@
   import SearchInput from './SearchInput.svelte';
   import AddOption from './AddOption.svelte';
   import { modalService } from '$lib/services/modal.service.svelte';
+  import { createFeedback } from '$lib/utils/feedback.svelte';
 
   let { onclose }: { onclose: () => void } = $props();
 
   let activeTab = $state<'funcionarios' | 'areas' | 'handies'>('funcionarios');
-  let error = $state<string | null>(null);
-  let success = $state<string | null>(null);
+  const feedback = createFeedback();
 
   // Search + add-funcionario state
   let searchInput = $state('');
@@ -20,28 +20,11 @@
   let pendingAreaId = $state<number | null>(null);
 
   // Owners filtered by name or area
-  const filteredOwners = $derived(
-    (() => {
-      const term = searchInput.trim().toLowerCase();
-      if (!term) return handyDB.owners;
-      return handyDB.owners.filter(
-        (o) =>
-          o.name.toLowerCase().includes(term) ||
-          (o.area_name ?? '').toLowerCase().includes(term),
-      );
-    })(),
-  );
+  const filteredOwners = $derived(handyDB.filterOwnersByTerm(searchInput));
 
   // Show "Agregar funcionario" when there's text that doesn't match an existing owner,
   // or matches one only as a capitalization variant (so it can be corrected).
-  const canAddNew = $derived(
-    (() => {
-      const text = searchInput.trim();
-      if (!text) return false;
-      const existing = handyDB.findOwner(text);
-      return existing === null || existing.name !== text;
-    })(),
-  );
+  const canAddNew = $derived(handyDB.canCreateOwner(searchInput));
 
   // Number of owners per area (for display)
   const ownerCountByArea = $derived(
@@ -55,31 +38,9 @@
     ),
   );
 
-  function clearFeedback() {
-    error = null;
-    success = null;
-  }
-
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Auto-dismiss the toast after 3 seconds
-  $effect(() => {
-    if (error || success) {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = setTimeout(() => {
-        clearFeedback();
-        feedbackTimer = null;
-      }, 3000);
-    }
-    return () => {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = null;
-    };
-  });
-
   function setActiveTab(tab: 'funcionarios' | 'areas' | 'handies') {
     activeTab = tab;
-    clearFeedback();
+    feedback.clear();
     searchInput = '';
     areaEditOwnerId = null;
   }
@@ -87,14 +48,14 @@
   async function addOwner() {
     const name = searchInput.trim();
     if (!name) return;
-    clearFeedback();
+    feedback.clear();
 
     try {
       await handyDB.createOwner(name);
-      success = `Funcionario "${name}" creado con éxito`;
+      feedback.setSuccess(`Funcionario "${name}" creado con éxito`);
       searchInput = '';
     } catch (err: any) {
-      error = err.message || `Error al crear el funcionario "${name}"`;
+      feedback.setError(err.message || `Error al crear el funcionario "${name}"`);
     }
   }
 
@@ -109,30 +70,30 @@
 
     const trimmed = newName.trim();
     if (!trimmed) {
-      error = 'El nombre del funcionario no puede estar vacío';
+      feedback.setError('El nombre del funcionario no puede estar vacío');
       return;
     }
     if (trimmed === owner.name) return;
 
     const areaId = owner.area_id ?? handyDB.defaultAreaId;
     if (areaId == null) {
-      error = 'No hay áreas disponibles';
+      feedback.setError('No hay áreas disponibles');
       return;
     }
 
-    clearFeedback();
+    feedback.clear();
     try {
       await handyDB.updateOwner(owner.id, trimmed, areaId);
-      success = `Funcionario "${owner.name}" renombrado a "${trimmed}"`;
+      feedback.setSuccess(`Funcionario "${owner.name}" renombrado a "${trimmed}"`);
     } catch (err: any) {
-      error = err.message || `Error al actualizar el funcionario "${owner.name}"`;
+      feedback.setError(err.message || `Error al actualizar el funcionario "${owner.name}"`);
     }
   }
 
   function startAreaEdit(owner: Owner) {
     areaEditOwnerId = owner.id;
     pendingAreaId = owner.area_id;
-    clearFeedback();
+    feedback.clear();
   }
 
   function cancelAreaEdit() {
@@ -142,17 +103,17 @@
 
   async function confirmAreaEdit(owner: Owner) {
     if (pendingAreaId == null) {
-      error = 'Debes seleccionar un área';
+      feedback.setError('Debes seleccionar un área');
       return;
     }
-    clearFeedback();
+    feedback.clear();
     const area = handyDB.areas.find((a) => a.id === pendingAreaId);
     try {
       await handyDB.updateOwnerArea(owner.id, pendingAreaId);
-      success = `Área de "${owner.name}" cambiada a "${area?.name}"`;
+      feedback.setSuccess(`Área de "${owner.name}" cambiada a "${area?.name}"`);
       cancelAreaEdit();
     } catch (err: any) {
-      error = err.message || `Error al actualizar el área de "${owner.name}"`;
+      feedback.setError(err.message || `Error al actualizar el área de "${owner.name}"`);
     }
   }
 
@@ -170,14 +131,14 @@
       danger: true,
     });
     if (!confirmed) return;
-    clearFeedback();
+    feedback.clear();
 
     try {
       await handyDB.deleteOwner(id);
       if (areaEditOwnerId === id) cancelAreaEdit();
-      success = `Funcionario "${owner?.name}" eliminado con éxito`;
+      feedback.setSuccess(`Funcionario "${owner?.name}" eliminado con éxito`);
     } catch (err: any) {
-      error = err.message || `Error al eliminar el funcionario "${owner?.name}"`;
+      feedback.setError(err.message || `Error al eliminar el funcionario "${owner?.name}"`);
     }
   }
 
@@ -192,22 +153,22 @@
 
     const trimmed = newName.trim();
     if (!trimmed) {
-      error = 'El nombre del área no puede estar vacío';
+      feedback.setError('El nombre del área no puede estar vacío');
       return;
     }
     if (trimmed === area.name) return;
 
-    clearFeedback();
+    feedback.clear();
     try {
       await handyDB.updateArea(area.id, trimmed);
-      success = `Área "${area.name}" renombrada a "${trimmed}"`;
+      feedback.setSuccess(`Área "${area.name}" renombrada a "${trimmed}"`);
     } catch (err: any) {
-      error = err.message || `Error al actualizar el área "${area.name}"`;
+      feedback.setError(err.message || `Error al actualizar el área "${area.name}"`);
     }
   }
 
   async function addArea() {
-    clearFeedback();
+    feedback.clear();
 
     const name = await modalService.prompt({
       title: 'Nueva área',
@@ -219,15 +180,15 @@
 
     const trimmed = name.trim();
     if (!trimmed) {
-      error = 'El nombre del área no puede estar vacío';
+      feedback.setError('El nombre del área no puede estar vacío');
       return;
     }
 
     try {
       await handyDB.createArea(trimmed);
-      success = `Área "${trimmed}" creada con éxito`;
+      feedback.setSuccess(`Área "${trimmed}" creada con éxito`);
     } catch (err: any) {
-      error = err.message || `Error al crear el área "${trimmed}"`;
+      feedback.setError(err.message || `Error al crear el área "${trimmed}"`);
     }
   }
 
@@ -241,24 +202,24 @@
       danger: true,
     });
     if (!confirmed) return;
-    clearFeedback();
+    feedback.clear();
 
     try {
       await handyDB.deleteArea(id);
-      success = `Área "${area.name}" eliminada con éxito`;
+      feedback.setSuccess(`Área "${area.name}" eliminada con éxito`);
     } catch (err: any) {
-      error = err.message || `Error al eliminar el área "${area.name}"`;
+      feedback.setError(err.message || `Error al eliminar el área "${area.name}"`);
     }
   }
 
   async function addHandy() {
-    clearFeedback();
+    feedback.clear();
 
     try {
       const id = await handyDB.createHandy();
-      success = `Handy #${id} creado con éxito`;
+      feedback.setSuccess(`Handy #${id} creado con éxito`);
     } catch (err: any) {
-      error = err.message || 'Error al crear el handy';
+      feedback.setError(err.message || 'Error al crear el handy');
     }
   }
 
@@ -267,7 +228,7 @@
     if (!handy) return;
 
     if (handy.owner_id != null) {
-      error = `No se puede eliminar el Handy #${id} porque está asignado a "${handy.owner_name}". Desvincúlalo primero.`;
+      feedback.setError(`No se puede eliminar el Handy #${id} porque está asignado a "${handy.owner_name}". Desvincúlalo primero.`);
       return;
     }
 
@@ -278,13 +239,13 @@
       danger: true,
     });
     if (!confirmed) return;
-    clearFeedback();
+    feedback.clear();
 
     try {
       await handyDB.deleteHandy(id);
-      success = `Handy #${id} eliminado con éxito`;
+      feedback.setSuccess(`Handy #${id} eliminado con éxito`);
     } catch (err: any) {
-      error = err.message || `Error al eliminar el Handy #${id}`;
+      feedback.setError(err.message || `Error al eliminar el Handy #${id}`);
     }
   }
 </script>
@@ -329,66 +290,66 @@
   {#if activeTab === 'funcionarios'}
     <div class="modal-body">
       <div class="funcionarios-list" data-nav-section="list">
-          {#each filteredOwners as owner (owner.id)}
-            {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
-            <div class="row-item">
-              <div class="row-info">
-                <span class="row-name">{owner.name}</span>
-                <span class="row-meta">
-                  {#if owner.area_name}
-                    <span class="area-badge">{owner.area_name}</span>
-                  {:else}
-                    <span class="row-muted">Sin área</span>
-                  {/if}
-                  {#if ownerHandyId != null}
-                    <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
-                  {/if}
-                </span>
-              </div>
-              <div class="row-actions">
-                <button type="button" class="btn-secondary btn-sm" onclick={() => renameOwner(owner)}>
-                  Renombrar
+        {#each filteredOwners as owner (owner.id)}
+          {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
+          <div class="row-item">
+            <div class="row-info">
+              <span class="row-name">{owner.name}</span>
+              <span class="row-meta">
+                {#if owner.area_name}
+                  <span class="area-badge">{owner.area_name}</span>
+                {:else}
+                  <span class="row-muted">Sin área</span>
+                {/if}
+                {#if ownerHandyId != null}
+                  <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
+                {/if}
+              </span>
+            </div>
+            <div class="row-actions">
+              <button type="button" class="btn-secondary btn-sm" onclick={() => renameOwner(owner)}>
+                Renombrar
+              </button>
+              <button type="button" class="btn-secondary btn-sm" onclick={() => startAreaEdit(owner)}>
+                Cambiar área
+              </button>
+              <button type="button" class="btn-danger btn-sm" onclick={() => handleDeleteOwner(owner.id)}>
+                Eliminar
+              </button>
+            </div>
+          </div>
+
+          {#if areaEditOwnerId === owner.id}
+            <div class="quick-area-panel">
+              <p class="quick-title">
+                Cambiar área de <strong>{owner.name}</strong>
+              </p>
+              <select bind:value={pendingAreaId}>
+                {#each handyDB.areas as area (area.id)}
+                  <option value={area.id}>{area.name}</option>
+                {/each}
+              </select>
+              <div class="form-actions">
+                <button type="button" class="btn-primary btn-sm" onclick={() => confirmAreaEdit(owner)}>
+                  Confirmar
                 </button>
-                <button type="button" class="btn-secondary btn-sm" onclick={() => startAreaEdit(owner)}>
-                  Cambiar área
-                </button>
-                <button type="button" class="btn-danger btn-sm" onclick={() => handleDeleteOwner(owner.id)}>
-                  Eliminar
+                <button type="button" class="btn-secondary btn-sm" onclick={cancelAreaEdit}>
+                  Cancelar
                 </button>
               </div>
             </div>
-
-            {#if areaEditOwnerId === owner.id}
-              <div class="quick-area-panel">
-                <p class="quick-title">
-                  Cambiar área de <strong>{owner.name}</strong>
-                </p>
-                <select bind:value={pendingAreaId}>
-                  {#each handyDB.areas as area (area.id)}
-                    <option value={area.id}>{area.name}</option>
-                  {/each}
-                </select>
-                <div class="form-actions">
-                  <button type="button" class="btn-primary btn-sm" onclick={() => confirmAreaEdit(owner)}>
-                    Confirmar
-                  </button>
-                  <button type="button" class="btn-secondary btn-sm" onclick={cancelAreaEdit}>
-                    Cancelar
-                  </button>
-                </div>
-              </div>
-            {/if}
-          {/each}
-
-          {#if canAddNew}
-            <AddOption
-              label="Agregar funcionario:"
-              text={searchInput.trim()}
-              onclick={addOwner}
-            />
           {/if}
-        </div>
+        {/each}
+
+        {#if canAddNew}
+          <AddOption
+            label="Agregar funcionario:"
+            text={searchInput.trim()}
+            onclick={addOwner}
+          />
+        {/if}
       </div>
+    </div>
     {:else if activeTab === 'areas'}
       <div class="modal-body">
         <div class="list-header" data-nav-section="header">
@@ -476,11 +437,11 @@
       </div>
     {/if}
 
-    {#if error}
-      <Alert type="danger" icon={false} class="admin-alert">{error}</Alert>
+    {#if feedback.error}
+      <Alert type="danger" icon={false} class="admin-alert" onclick={feedback.clear}>{feedback.error}</Alert>
     {/if}
-    {#if success}
-      <Alert type="success" icon={false} class="admin-alert">{success}</Alert>
+    {#if feedback.success}
+      <Alert type="success" icon={false} class="admin-alert" onclick={feedback.clear}>{feedback.success}</Alert>
     {/if}
 </AppModal>
 

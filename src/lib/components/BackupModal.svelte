@@ -3,69 +3,42 @@
   import { save, open } from '@tauri-apps/plugin-dialog';
   import AppModal from './AppModal.svelte';
   import Alert from './Alert.svelte';
+  import { createFeedback } from '$lib/utils/feedback.svelte';
+  import { todayISO } from '$lib/utils/dates';
 
   let { onclose }: { onclose: () => void } = $props();
 
   let busy = $state<'backup' | 'restore' | null>(null);
-  let error = $state<string | null>(null);
-  let success = $state<string | null>(null);
+  const feedback = createFeedback();
   let confirmRestorePath = $state<string | null>(null);
 
-  function clearFeedback() {
-    error = null;
-    success = null;
-  }
-
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Auto-dismiss the toast after 3 seconds
-  $effect(() => {
-    if (error || success) {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = setTimeout(() => {
-        clearFeedback();
-        feedbackTimer = null;
-      }, 3000);
-    }
-    return () => {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = null;
-    };
-  });
-
-  function todayStamp(): string {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }
-
   async function handleBackup() {
-    clearFeedback();
+    feedback.clear();
     let path: string | null;
     try {
       path = await save({
         title: 'Guardar copia de seguridad',
-        defaultPath: `handy-manager-${todayStamp()}.db`,
+        defaultPath: `handy-manager-${todayISO()}.db`,
         filters: [{ name: 'Base de datos SQLite', extensions: ['db'] }],
       });
     } catch (err: any) {
-      error = err.message || 'Error al elegir el archivo de destino';
+      feedback.setError(err.message || 'Error al elegir el archivo de destino');
       return;
     }
     if (!path) return;
     busy = 'backup';
     try {
       await handyDB.backupDatabase(path);
-      success = 'Copia de seguridad creada con éxito';
+      feedback.setSuccess('Copia de seguridad creada con éxito');
     } catch (err: any) {
-      error = err.message || 'Error al crear la copia de seguridad';
+      feedback.setError(err.message || 'Error al crear la copia de seguridad');
     } finally {
       busy = null;
     }
   }
 
   async function handleRestore() {
-    clearFeedback();
+    feedback.clear();
     let path: string | string[] | null;
     try {
       path = await open({
@@ -74,7 +47,7 @@
         filters: [{ name: 'Base de datos SQLite', extensions: ['db'] }],
       });
     } catch (err: any) {
-      error = err.message || 'Error al elegir el archivo de copia';
+      feedback.setError(err.message || 'Error al elegir el archivo de copia');
       return;
     }
     if (!path) return;
@@ -83,13 +56,13 @@
 
   async function confirmRestore() {
     if (!confirmRestorePath) return;
-    clearFeedback();
+    feedback.clear();
     busy = 'restore';
     try {
       await handyDB.restoreDatabase(confirmRestorePath);
-      success = 'Datos restaurados correctamente';
+      feedback.setSuccess('Datos restaurados correctamente');
     } catch (err: any) {
-      error = err.message || 'Error al restaurar los datos';
+      feedback.setError(err.message || 'Error al restaurar los datos');
     } finally {
       busy = null;
       confirmRestorePath = null;
@@ -173,11 +146,11 @@
       </div>
     </section>
 
-    {#if error}
-      <Alert type="danger" class="modal-alert">{error}</Alert>
+    {#if feedback.error}
+      <Alert type="danger" class="modal-alert" onclick={feedback.clear}>{feedback.error}</Alert>
     {/if}
-    {#if success}
-      <Alert type="success" class="modal-alert">{success}</Alert>
+    {#if feedback.success}
+      <Alert type="success" class="modal-alert" onclick={feedback.clear}>{feedback.success}</Alert>
     {/if}
   </div>
 </AppModal>

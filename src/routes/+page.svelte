@@ -74,6 +74,13 @@
     assignHandyId = id;
   }
 
+  // Run a DB action with toast feedback (success or error)
+  function runHandyAction(action: () => Promise<void>, successMessage: string) {
+    Promise.resolve(action())
+      .then(() => toastService.success(successMessage))
+      .catch((err: any) => toastService.error(err.message || 'Error'));
+  }
+
   // Build and show the context menu for a handy card
   function handleHandyContextMenu(e: MouseEvent, handy: Handy) {
     let items: ContextMenuItem[];
@@ -86,7 +93,14 @@
       items = [];
       if (!handy.fixed) {
         items.push(
-          { label: 'Liberar Handy', action: () => handyDB.unassign(handy.id) },
+          {
+            label: 'Liberar Handy',
+            action: () =>
+              runHandyAction(
+                () => handyDB.unassign(handy.id),
+                `Handy #${handy.id} liberado`,
+              ),
+          },
           { isSeparator: true },
           { label: 'Reasignar handy', action: () => openAssignModal(handy.id) },
           { isSeparator: true },
@@ -94,7 +108,11 @@
       }
       items.push({
         label: handy.fixed ? 'Desfijar' : 'Fijar handy',
-        action: () => handyDB.toggleFixed(handy.id),
+        action: () =>
+          runHandyAction(
+            () => handyDB.toggleFixed(handy.id),
+            `Handy #${handy.id} ${handy.fixed ? 'desfijado' : 'fijado'}`,
+          ),
       });
     }
 

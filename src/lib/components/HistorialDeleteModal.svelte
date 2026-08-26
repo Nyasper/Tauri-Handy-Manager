@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { onMount } from 'svelte';
   import { handyDB } from '$lib/services/db.service.svelte';
   import AppModal from './AppModal.svelte';
   import Alert from './Alert.svelte';
   import { modalService } from '$lib/services/modal.service.svelte';
+  import { createFeedback } from '$lib/utils/feedback.svelte';
 
   let { onclose }: { onclose: () => void } = $props();
 
@@ -15,37 +15,21 @@
   let passwordSet = $state(false);
   let recentCount = $state('');
   let oldestCount = $state('');
-  let error = $state<string | null>(null);
-  let success = $state<string | null>(null);
+  const feedback = createFeedback();
 
-  onMount(async () => {
-    try {
-      const pw = await handyDB.getSecurityPassword();
-      passwordSet = pw != null && pw !== '';
-    } catch {
-      passwordSet = false;
-    }
-  });
-
-  function clearFeedback() {
-    error = null;
-    success = null;
-  }
-
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Auto-dismiss the toast after 3 seconds
+  // Check whether a security password is configured when the modal opens
   $effect(() => {
-    if (error || success) {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = setTimeout(() => {
-        clearFeedback();
-        feedbackTimer = null;
-      }, 3000);
-    }
+    let cancelled = false;
+    (async () => {
+      try {
+        const pw = await handyDB.getSecurityPassword();
+        if (!cancelled) passwordSet = pw != null && pw !== '';
+      } catch {
+        if (!cancelled) passwordSet = false;
+      }
+    })();
     return () => {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = null;
+      cancelled = true;
     };
   });
 
@@ -56,26 +40,26 @@
   }
 
   async function savePassword() {
-    clearFeedback();
+    feedback.clear();
 
     if (changingPassword) {
       const stored = await handyDB.getSecurityPassword();
       if (!stored) {
         passwordSet = false;
-        error = 'Primero debes configurar una contraseña de seguridad';
+        feedback.setError('Primero debes configurar una contraseña de seguridad');
         return;
       }
       if (currentPassword !== stored) {
-        error = 'La contraseña actual es incorrecta';
+        feedback.setError('La contraseña actual es incorrecta');
         return;
       }
       const pw = newPassword.trim();
       if (!pw) {
-        error = 'La contraseña no puede estar vacía';
+        feedback.setError('La contraseña no puede estar vacía');
         return;
       }
       if (pw !== confirmPassword) {
-        error = 'La confirmación de la nueva contraseña no coincide';
+        feedback.setError('La confirmación de la nueva contraseña no coincide');
         return;
       }
       try {
@@ -85,16 +69,16 @@
         confirmPassword = '';
         changingPassword = false;
         passwordSet = true;
-        success = 'Contraseña actualizada con éxito';
+        feedback.setSuccess('Contraseña actualizada con éxito');
       } catch (err: any) {
-        error = err.message || 'Error al actualizar la contraseña';
+        feedback.setError(err.message || 'Error al actualizar la contraseña');
       }
       return;
     }
 
     const pw = password.trim();
     if (!pw) {
-      error = 'La contraseña no puede estar vacía';
+      feedback.setError('La contraseña no puede estar vacía');
       return;
     }
     try {
@@ -102,9 +86,9 @@
       password = '';
       changingPassword = false;
       passwordSet = true;
-      success = 'Contraseña guardada con éxito';
+      feedback.setSuccess('Contraseña guardada con éxito');
     } catch (err: any) {
-      error = err.message || 'Error al guardar la contraseña';
+      feedback.setError(err.message || 'Error al guardar la contraseña');
     }
   }
 
@@ -112,21 +96,21 @@
     const stored = await handyDB.getSecurityPassword();
     if (!stored) {
       passwordSet = false;
-      error = 'Primero debes configurar una contraseña de seguridad';
+      feedback.setError('Primero debes configurar una contraseña de seguridad');
       return false;
     }
     if (password !== stored) {
-      error = 'Contraseña incorrecta';
+      feedback.setError('Contraseña incorrecta');
       return false;
     }
     return true;
   }
 
   async function handleDeleteRecent() {
-    clearFeedback();
+    feedback.clear();
     const n = parseCount(recentCount);
     if (Number.isNaN(n)) {
-      error = 'Ingresa un número de entradas mayor que 0';
+      feedback.setError('Ingresa un número de entradas mayor que 0');
       return;
     }
     const confirmed = await modalService.confirm({
@@ -143,17 +127,17 @@
       const deleted = Math.min(n, total);
       await handyDB.deleteRecentHistory(n);
       recentCount = '';
-      success = `Se borraron ${deleted} entrada${deleted === 1 ? '' : 's'} más reciente${deleted === 1 ? '' : 's'}`;
+      feedback.setSuccess(`Se borraron ${deleted} entrada${deleted === 1 ? '' : 's'} más reciente${deleted === 1 ? '' : 's'}`);
     } catch (err: any) {
-      error = err.message || 'Error al borrar las entradas';
+      feedback.setError(err.message || 'Error al borrar las entradas');
     }
   }
 
   async function handleDeleteOldest() {
-    clearFeedback();
+    feedback.clear();
     const n = parseCount(oldestCount);
     if (Number.isNaN(n)) {
-      error = 'Ingresa un número de entradas mayor que 0';
+      feedback.setError('Ingresa un número de entradas mayor que 0');
       return;
     }
     const confirmed = await modalService.confirm({
@@ -170,14 +154,14 @@
       const deleted = Math.min(n, total);
       await handyDB.deleteOldestHistory(n);
       oldestCount = '';
-      success = `Se borraron ${deleted} entrada${deleted === 1 ? '' : 's'} más antigua${deleted === 1 ? '' : 's'}`;
+      feedback.setSuccess(`Se borraron ${deleted} entrada${deleted === 1 ? '' : 's'} más antigua${deleted === 1 ? '' : 's'}`);
     } catch (err: any) {
-      error = err.message || 'Error al borrar las entradas';
+      feedback.setError(err.message || 'Error al borrar las entradas');
     }
   }
 
   async function handleDeleteAll() {
-    clearFeedback();
+    feedback.clear();
     const confirmed = await modalService.confirm({
       title: 'Borrar todo el historial',
       message: `¿Borrar TODO el historial (${handyDB.historyTotal} entradas)? Esta acción no se puede deshacer.`,
@@ -189,9 +173,9 @@
 
     try {
       await handyDB.clearHistory();
-      success = 'Se borró todo el historial';
+      feedback.setSuccess('Se borró todo el historial');
     } catch (err: any) {
-      error = err.message || 'Error al borrar el historial';
+      feedback.setError(err.message || 'Error al borrar el historial');
     }
   }
 </script>
@@ -230,7 +214,7 @@
               currentPassword = '';
               newPassword = '';
               confirmPassword = '';
-              clearFeedback();
+              feedback.clear();
             }}
           >
             Cambiar
@@ -269,7 +253,7 @@
                 currentPassword = '';
                 newPassword = '';
                 confirmPassword = '';
-                clearFeedback();
+                feedback.clear();
               }}
             >
               Cancelar
@@ -331,11 +315,11 @@
       </div>
     </section>
 
-    {#if error}
-      <Alert type="danger" icon={false} class="modal-alert">{error}</Alert>
+    {#if feedback.error}
+      <Alert type="danger" icon={false} class="modal-alert" onclick={feedback.clear}>{feedback.error}</Alert>
     {/if}
-    {#if success}
-      <Alert type="success" icon={false} class="modal-alert">{success}</Alert>
+    {#if feedback.success}
+      <Alert type="success" icon={false} class="modal-alert" onclick={feedback.clear}>{feedback.success}</Alert>
     {/if}
   </div>
 </AppModal>

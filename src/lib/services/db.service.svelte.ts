@@ -1,6 +1,7 @@
 import { browser } from "$app/environment";
 import Database from "@tauri-apps/plugin-sql";
 import { invoke } from "@tauri-apps/api/core";
+import { formatDateOnly, formatTimeOnly } from "../utils/dates";
 
 export interface Area {
   id: number;
@@ -131,6 +132,79 @@ class HandyDB {
     await this.db.execute(
       "CREATE TABLE IF NOT EXISTS settings (key TEXT PRIMARY KEY, value TEXT)",
     );
+
+    const [{ areaCount }] = await this.db.select<{ areaCount: number }[]>(
+      "SELECT COUNT(*) AS areaCount FROM areas",
+    );
+    if (areaCount === 0) {
+      await this.seedInitialData();
+    }
+  }
+
+  /** Pobla áreas y funcionarios iniciales (idempotente: sólo si no hay áreas). */
+  private async seedInitialData() {
+    if (!this.db) return;
+
+    const SEED_AREAS = [
+      "Gerencia / Gobernancia",
+      "Seguridad",
+      "Recepción",
+      "Cadete / Garajista",
+      "Mantenimiento",
+      "Mucama",
+      "Vidriero",
+      "Playero",
+    ];
+
+    const SEED_OWNERS = [
+      "Carolina Silvera",
+      "Natalia Rodríguez",
+      "Silvina Laviaguerre",
+      "Lautaro Hinojosa",
+      "Gabriel Maciel",
+      "Yuliana Silva",
+      "Andrea Quintana",
+      "Gricell Medina",
+      "Mariana Fernandez",
+      "Romina Pouer",
+      "Romina Gonzales",
+      "Mikaela Reboledo",
+      "Joseline Morales",
+      "Martin Añon",
+      "Cristian Castro",
+      "Gonzalo Herrera",
+      "Maicol Sequeira",
+      "Nahuel Porta",
+      "Gabriel Bentancurt",
+      "Silvina Acosta",
+      "Gerardo Duartes",
+      "Gustavo Muñoz",
+      "Lorena Pereyra",
+      "Patricio Gimenez",
+      "Manuel Suarez",
+      "Francisco Sastre",
+      "José Ducasse",
+      "Fernando Segovia",
+      "Matias Alonso",
+      "Otro",
+    ];
+
+    for (const name of SEED_AREAS) {
+      await this.db.execute("INSERT OR IGNORE INTO areas (name) VALUES (?)", [
+        name,
+      ]);
+    }
+
+    const areas = await this.db.select<Area[]>(
+      "SELECT id, name FROM areas ORDER BY id ASC",
+    );
+    for (let i = 0; i < SEED_OWNERS.length; i++) {
+      const area = areas[i % areas.length];
+      await this.db.execute(
+        "INSERT OR IGNORE INTO owners (name, area_id) VALUES (?, ?)",
+        [SEED_OWNERS[i], area.id],
+      );
+    }
   }
 
   /** Recarga todos los datos desde la base de datos y actualiza el estado reactivo. */
@@ -174,6 +248,35 @@ class HandyDB {
     return (
       this.owners.find((o) => o.name.trim().toLowerCase() === normalized) ?? null
     );
+  }
+
+  /** Owners whose name or area matches the given term (case-insensitive). */
+  filterOwnersByTerm(term: string): Owner[] {
+    const t = term.trim().toLowerCase();
+    if (!t) return this.owners;
+    return this.owners.filter(
+      (o) =>
+        o.name.toLowerCase().includes(t) ||
+        (o.area_name ?? '').toLowerCase().includes(t),
+    );
+  }
+
+  /**
+   * Whether the typed text can be used to create a new owner: it isn't an
+   * exact existing name, and (optionally) it isn't an area name either.
+   */
+  canCreateOwner(text: string, checkAreas = false): boolean {
+    const t = text.trim();
+    if (!t) return false;
+    const existing = this.findOwner(t);
+    if (existing !== null && existing.name === t) return false;
+    if (
+      checkAreas &&
+      this.areas.some((a) => a.name.trim().toLowerCase() === t.toLowerCase())
+    ) {
+      return false;
+    }
+    return true;
   }
 
   /** Default area for new owners: 'Otro', or the first area if it doesn't exist. */
@@ -387,18 +490,6 @@ class HandyDB {
       newOwner.name,
     );
     await this.refresh();
-  }
-
-  /** Assign a handy to a person by name, creating the owner if needed. */
-  async assign(id: number, name: string) {
-    const owner = await this.createOwner(name);
-    await this.assignToOwner(id, owner.id);
-  }
-
-  /** Update assignment for an existing owner (renaming or moving areas). */
-  async updateAssignee(id: number, newOwnerName: string) {
-    const owner = await this.createOwner(newOwnerName);
-    await this.assignToOwner(id, owner.id);
   }
 
   /** Desvincula un handy de su funcionario y registra el evento en el historial. */
@@ -693,27 +784,12 @@ function csvEscape(value: string): string {
 export function historyToCsv(entries: HistoryEntry[]): string {
   const header = ['Handy #', 'Acción', 'Funcionario', 'Fecha', 'Hora'];
   const rows = entries.map((entry) => {
-    const date = new Date(entry.timestamp);
-    const fecha = Number.isNaN(date.getTime())
-      ? ''
-      : date.toLocaleDateString('es-UY', {
-          day: '2-digit',
-          month: '2-digit',
-          year: 'numeric',
-        });
-    const hora = Number.isNaN(date.getTime())
-      ? ''
-      : date.toLocaleTimeString('es-UY', {
-          hour: '2-digit',
-          minute: '2-digit',
-          hour12: false,
-        });
     return [
       String(entry.handy_id),
       entry.action === 'assign' ? 'Vinculado' : 'Desvinculado',
       entry.owner_name,
-      fecha,
-      hora,
+      formatDateOnly(entry.timestamp),
+      formatTimeOnly(entry.timestamp),
     ]
       .map(csvEscape)
       .join(',');

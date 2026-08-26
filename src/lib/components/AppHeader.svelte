@@ -23,6 +23,10 @@
     onfuncionarios: () => void;
     onhistorial: () => void;
   } = $props();
+
+  const themeLabel = $derived(
+    theme.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro',
+  );
 </script>
 
 <header class="app-header glass-panel">
@@ -96,8 +100,8 @@
       class="btn-secondary manage-btn theme-toggle"
       {@attach shortcuts.rovingFocus('header')}
       onclick={() => theme.toggle()}
-      title={theme.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
-      aria-label={theme.theme === 'dark' ? 'Cambiar a modo claro' : 'Cambiar a modo oscuro'}
+      title={themeLabel}
+      aria-label={themeLabel}
     >
       {#if theme.theme === 'dark'}
         <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">

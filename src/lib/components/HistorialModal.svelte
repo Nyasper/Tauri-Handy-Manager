@@ -12,6 +12,8 @@
   import HistorialDeleteModal from './HistorialDeleteModal.svelte';
   import BackupModal from './BackupModal.svelte';
   import Alert from './Alert.svelte';
+  import { createFeedback } from '$lib/utils/feedback.svelte';
+  import { todayISO, formatDateTime } from '$lib/utils/dates';
 
   let { onclose }: { onclose: () => void } = $props();
 
@@ -20,30 +22,7 @@
   let showDeleteModal = $state(false);
   let showBackupModal = $state(false);
   let exporting = $state(false);
-  let exportError = $state<string | null>(null);
-  let exportSuccess = $state<string | null>(null);
-
-  function clearFeedback() {
-    exportError = null;
-    exportSuccess = null;
-  }
-
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Auto-dismiss the toast after 3 seconds
-  $effect(() => {
-    if (exportError || exportSuccess) {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = setTimeout(() => {
-        clearFeedback();
-        feedbackTimer = null;
-      }, 3000);
-    }
-    return () => {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = null;
-    };
-  });
+  const feedback = createFeedback();
 
   // Paginated history loaded from the database (newest first)
   let entries = $state<HistoryEntry[]>([]);
@@ -59,18 +38,19 @@
 
   const hasMore = $derived(entries.length < total);
 
-  function formatDate(timestamp: string): string {
-    const date = new Date(timestamp);
-    if (Number.isNaN(date.getTime())) return timestamp;
-    return date.toLocaleString('es-UY', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-    });
-  }
+  // "hasta" defaults to today when only "desde" is picked, so the query stays
+  // bounded without mutating state (which would trigger a second query).
+  const effectiveToDate = $derived(
+    toDate || (fromDate && fromDate <= todayISO() ? todayISO() : ''),
+  );
+
+  // Shared filter options for reload / load-more / export.
+  const buildQuery = () => ({
+    action: actionFilter,
+    term: debouncedSearch,
+    from: fromDate || undefined,
+    to: effectiveToDate || undefined,
+  });
 
   function toggleFilter(filter: 'assign' | 'unassign') {
     actionFilter = actionFilter === filter ? 'all' : filter;
@@ -81,10 +61,7 @@
     loading = true;
     try {
       const result = await handyDB.queryHistory({
-        action: actionFilter,
-        term: debouncedSearch,
-        from: fromDate || undefined,
-        to: toDate || undefined,
+        ...buildQuery(),
         limit: HISTORY_PAGE_SIZE_DEFAULT,
         offset: 0,
       });
@@ -105,10 +82,7 @@
     const version = queryVersion;
     try {
       const result = await handyDB.queryHistory({
-        action: actionFilter,
-        term: debouncedSearch,
-        from: fromDate || undefined,
-        to: toDate || undefined,
+        ...buildQuery(),
         limit: HISTORY_PAGE_SIZE_DEFAULT,
         offset: entries.length,
       });
@@ -137,7 +111,7 @@
     debouncedSearch;
     actionFilter;
     fromDate;
-    toDate;
+    effectiveToDate;
     handyDB.historyEpoch;
     void reload();
   });
@@ -162,12 +136,6 @@
     toDate = '';
   }
 
-  function todayISO(): string {
-    const d = new Date();
-    const pad = (n: number) => String(n).padStart(2, '0');
-    return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-  }
-
   // Si solo se selecciona "desde", acotar "hasta" a hoy.
   $effect(() => {
     if (fromDate && !toDate) {
@@ -179,22 +147,17 @@
   });
 
   async function exportCsv() {
-    exportError = null;
-    exportSuccess = null;
+    feedback.clear();
     let all: HistoryEntry[];
     try {
-      all = await handyDB.exportHistory(
-        actionFilter,
-        debouncedSearch,
-        fromDate || undefined,
-        toDate || undefined,
-      );
+      const q = buildQuery();
+      all = await handyDB.exportHistory(q.action, q.term, q.from, q.to);
     } catch (err: any) {
-      exportError = err.message || 'Error al consultar el historial';
+      feedback.setError(err.message || 'Error al consultar el historial');
       return;
     }
     if (all.length === 0) {
-      exportError = 'No hay registros que exportar';
+      feedback.setError('No hay registros que exportar');
       return;
     }
     let path: string | null;
@@ -205,7 +168,7 @@
         filters: [{ name: 'CSV', extensions: ['csv'] }],
       });
     } catch (err: any) {
-      exportError = err.message || 'Error al elegir el archivo de exportación';
+      feedback.setError(err.message || 'Error al elegir el archivo de exportación');
       return;
     }
     if (!path) return;
@@ -213,9 +176,11 @@
     try {
       const csv = historyToCsv(all);
       await invoke('write_text_file', { path, contents: csv });
-      exportSuccess = `Historial exportado (${all.length} registro ${all.length === 1 ? '' : 's'})`;
+      feedback.setSuccess(
+        `Historial exportado (${all.length} registro ${all.length === 1 ? '' : 's'})`,
+      );
     } catch (err: any) {
-      exportError = err.message || 'Error al exportar el historial';
+      feedback.setError(err.message || 'Error al exportar el historial');
     } finally {
       exporting = false;
     }
@@ -355,7 +320,7 @@
                   <span class="area-badge history-area">{entry.area_name}</span>
                 {/if}
               </span>
-              <span class="history-date">{formatDate(entry.timestamp)}</span>
+              <span class="history-date">{formatDateTime(entry.timestamp)}</span>
             </div>
           </div>
         {/each}
@@ -378,11 +343,25 @@
       {/if}
     </div>
 
-    {#if exportError}
-      <Alert type="danger" icon={false} class="modal-alert">{exportError}</Alert>
+    {#if feedback.error}
+      <Alert
+        type="danger"
+        icon={false}
+        class="modal-alert"
+        onclick={feedback.clear}
+      >
+        {feedback.error}
+      </Alert>
     {/if}
-    {#if exportSuccess}
-      <Alert type="success" icon={false} class="modal-alert">{exportSuccess}</Alert>
+    {#if feedback.success}
+      <Alert
+        type="success"
+        icon={false}
+        class="modal-alert"
+        onclick={feedback.clear}
+      >
+        {feedback.success}
+      </Alert>
     {/if}
   </div>
 </AppModal>

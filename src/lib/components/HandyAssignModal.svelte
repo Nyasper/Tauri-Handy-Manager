@@ -3,7 +3,10 @@
   import Alert from './Alert.svelte';
   import SearchInput from './SearchInput.svelte';
   import AddOption from './AddOption.svelte';
-  import { handyDB, type Handy } from '$lib/services/db.service.svelte';
+  import AreaPickerModal from './AreaPickerModal.svelte';
+  import { handyDB, type Handy, type Owner } from '$lib/services/db.service.svelte';
+  import { toastService } from '$lib/services/toast.service.svelte';
+  import { createFeedback } from '$lib/utils/feedback.svelte';
 
   let {
     handy,
@@ -17,39 +20,24 @@
   // Snapshot the current owner once: the modal is remounted on each open
   // svelte-ignore state_referenced_locally
   let selectedOwnerId = $state<number | null>(handy?.owner_id ?? null);
-  let actionError = $state<string | null>(null);
-  let actionSuccess = $state<string | null>(null);
+  // Owner whose area is being changed via the picker modal
+  let areaPickerOwner = $state<Owner | null>(null);
+  // Chosen area for a brand-new owner created from the typed name
+  let pendingAreaId = $state<number | null>(null);
+
+  const feedback = createFeedback();
 
   // Unassigned funcionarios (plus the current owner, so they can be kept), filtered by name or area
-  const filteredOwners = $derived(
-    (() => {
-      const term = searchInput.trim().toLowerCase();
-      return handyDB.owners.filter((o) => {
-        const isCurrent = handy?.owner_id != null && o.id === handy.owner_id;
-        const isUnassigned = !handyDB.handyByOwner.has(o.id);
-        if (!isCurrent && !isUnassigned) return false;
-        if (!term) return true;
-        return (
-          o.name.toLowerCase().includes(term) ||
-          (o.area_name ?? '').toLowerCase().includes(term)
-        );
-      });
-    })(),
-  );
+  const filteredOwners = $derived.by(() => {
+    const currentOwnerId = handy?.owner_id ?? null;
+    return handyDB
+      .filterOwnersByTerm(searchInput)
+      .filter((o) => o.id === currentOwnerId || !handyDB.handyByOwner.has(o.id));
+  });
 
   // Show "Agregar owner" when there's text that matches neither an existing owner (case-insensitive)
   // nor an area, but skip hiding it when the only match is a capitalization variant of an owner.
-  const canAddNew = $derived(
-    (() => {
-      const text = searchInput.trim();
-      if (!text) return false;
-      const existing = handyDB.findOwner(text);
-      if (existing !== null && existing.name === text) return false;
-      return handyDB.areas.every(
-        (a) => a.name.trim().toLowerCase() !== text.toLowerCase(),
-      );
-    })(),
-  );
+  const canAddNew = $derived(handyDB.canCreateOwner(searchInput, true));
 
   // Allow submitting when an owner from the visible list is selected or when the
   // typed name is a new one to create. Disables the button when the search yields
@@ -65,96 +53,88 @@
       selectedOwnerId !== handy.owner_id,
   );
 
-  function clearFeedback() {
-    actionError = null;
-    actionSuccess = null;
-  }
-
-  let feedbackTimer: ReturnType<typeof setTimeout> | null = null;
-
-  // Auto-dismiss the toast after 3 seconds
-  $effect(() => {
-    if (actionError || actionSuccess) {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = setTimeout(() => {
-        clearFeedback();
-        feedbackTimer = null;
-      }, 3000);
-    }
-    return () => {
-      if (feedbackTimer) clearTimeout(feedbackTimer);
-      feedbackTimer = null;
-    };
-  });
-
   function selectOwner(id: number) {
     selectedOwnerId = id;
-    clearFeedback();
+    feedback.clear();
   }
 
-  async function addNewOwner() {
-    if (!handy) return;
+  const pendingAreaName = $derived(
+    handyDB.areas.find((a) => a.id === pendingAreaId)?.name ?? null,
+  );
+
+  function openNewAreaPicker() {
+    feedback.clear();
+    areaPickerOwner = null;
     const name = searchInput.trim();
-    if (!name) return;
-    clearFeedback();
-
-    try {
-      const owner = await handyDB.createOwner(name);
-      await handyDB.assignToOwner(handy.id, owner.id);
-      onclose();
-    } catch (err: any) {
-      actionError = err.message || 'Error al crear el funcionario';
-    }
+    const currentId = pendingAreaId ?? handyDB.defaultAreaId;
+    areaPickerOwner = {
+      id: -1,
+      name,
+      area_id: currentId,
+      area_name: handyDB.areas.find((a) => a.id === currentId)?.name ?? null,
+    };
   }
 
-  async function handleSave(e: Event) {
-    e.preventDefault();
-    if (!handy) return;
-    clearFeedback();
+  function openOwnerAreaPicker(owner: Owner) {
+    feedback.clear();
+    areaPickerOwner = owner;
+  }
 
-    if (selectedOwnerId == null) {
-      const name = searchInput.trim();
-      if (!name) {
-        actionError = 'Selecciona una persona de la lista o escribe un nombre nuevo';
-        return;
-      }
-      try {
-        await handyDB.assign(handy.id, name);
-        onclose();
-      } catch (err: any) {
-        actionError = err.message || 'Error al guardar los cambios';
-      }
+  async function handleAreaPicked(owner: Owner, areaId: number) {
+    if (owner.id === -1) {
+      // New owner not created yet: keep the choice for creation
+      pendingAreaId = areaId;
       return;
     }
+    await handyDB.updateOwnerArea(owner.id, areaId);
+    toastService.success(
+      `Área de "${owner.name}" cambiada a "${handyDB.areas.find((a) => a.id === areaId)?.name}"`,
+    );
+  }
+
+  async function submitAssignment(e?: Event) {
+    e?.preventDefault();
+    if (!handy) return;
+    feedback.clear();
 
     try {
-      await handyDB.assignToOwner(handy.id, selectedOwnerId);
+      if (selectedOwnerId != null) {
+        await handyDB.assignToOwner(handy.id, selectedOwnerId);
+      } else {
+        const name = searchInput.trim();
+        if (!name) {
+          feedback.setError('Selecciona una persona de la lista o escribe un nombre nuevo');
+          return;
+        }
+        const owner = await handyDB.createOwner(name, pendingAreaId ?? undefined);
+        await handyDB.assignToOwner(handy.id, owner.id);
+      }
       onclose();
     } catch (err: any) {
-      actionError = err.message || 'Error al guardar los cambios';
+      feedback.setError(err.message || 'Error al guardar los cambios');
     }
   }
 
   async function handleUnassign() {
     if (!handy) return;
-    clearFeedback();
+    feedback.clear();
 
     try {
       await handyDB.unassign(handy.id);
       onclose();
     } catch (err: any) {
-      actionError = err.message || 'Error al desvincular el handy';
+      feedback.setError(err.message || 'Error al desvincular el handy');
     }
   }
 
   async function handleUnpin() {
     if (!handy) return;
-    clearFeedback();
+    feedback.clear();
 
     try {
       await handyDB.toggleFixed(handy.id);
     } catch (err: any) {
-      actionError = err.message || 'Error al desfijar el handy';
+      feedback.setError(err.message || 'Error al desfijar el handy');
     }
   }
 </script>
@@ -187,7 +167,7 @@
           </button>
         </div>
       {:else}
-        <form onsubmit={handleSave} class="assignment-form">
+        <form onsubmit={submitAssignment} class="assignment-form">
           <div class="form-group">
             <label for="assign-owner-search">Funcionario</label>
             <div class="assign-search" data-nav-section="search">
@@ -201,45 +181,63 @@
             <div class="owners-list" data-nav-section="list">
               {#each filteredOwners as owner (owner.id)}
                 {@const ownerHandyId = handyDB.handyByOwner.get(owner.id)}
-                <button
-                  type="button"
-                  class="owner-item"
+                <div
+                  class="owner-row"
                   class:selected={selectedOwnerId === owner.id}
-                  onclick={() => selectOwner(owner.id)}
                 >
-                  <span class="owner-name">{owner.name}</span>
-                  <span class="owner-meta">
-                    {#if owner.area_name}
-                      <span class="area-badge">{owner.area_name}</span>
-                    {/if}
+                  <button
+                    type="button"
+                    class="owner-select"
+                    class:selected={selectedOwnerId === owner.id}
+                    onclick={() => selectOwner(owner.id)}
+                  >
+                    <span class="owner-name">{owner.name}</span>
                     {#if ownerHandyId != null}
                       <span class="handy-badge-sm">Handy #{ownerHandyId}</span>
                     {/if}
-                  </span>
-                </button>
+                  </button>
+                  {#if owner.area_name}
+                    <button
+                      type="button"
+                      class="area-badge-btn"
+                      title={`Cambiar área de ${owner.name}`}
+                      onclick={() => openOwnerAreaPicker(owner)}
+                    >
+                      {owner.area_name}
+                    </button>
+                  {/if}
+                </div>
               {/each}
 
               {#if canAddNew}
+                <div class="new-owner-area">
+                  <span class="new-owner-label">Área del nuevo funcionario:</span>
+                  <button
+                    type="button"
+                    class="area-badge-btn"
+                    title="Cambiar el área del nuevo funcionario"
+                    onclick={openNewAreaPicker}
+                  >
+                    {pendingAreaName ?? 'Por defecto'}
+                  </button>
+                </div>
+
                 <AddOption
                   label="Agregar funcionario"
                   text={searchInput.trim()}
                   suffix={` y asignar handy #${handy.id}`}
-                  onclick={addNewOwner}
+                  onclick={() => submitAssignment()}
                 />
               {/if}
             </div>
 
             <span class="helper-text">
-              Selecciona una persona de la lista o escribe un nombre nuevo: al confirmar se creará y asignará automáticamente. El área se asigna desde "Administración".
+              Selecciona una persona de la lista o escribe un nombre nuevo: al confirmar se creará y asignará automáticamente. Podés cambiar el área tocando la etiqueta del área.
             </span>
           </div>
 
-          {#if actionError}
-            <Alert type="danger">{actionError}</Alert>
-          {/if}
-
-          {#if actionSuccess}
-            <Alert type="success">{actionSuccess}</Alert>
+          {#if feedback.error}
+            <Alert type="danger" onclick={feedback.clear}>{feedback.error}</Alert>
           {/if}
 
           <div class="action-buttons" data-nav-section="actions">
@@ -262,6 +260,16 @@
       {/if}
     </div>
   </AppModal>
+{/if}
+
+{#if areaPickerOwner}
+  {@const pickerOwner = areaPickerOwner}
+  <AreaPickerModal
+    ownerName={pickerOwner.name}
+    currentAreaId={pickerOwner.area_id}
+    onclose={() => (areaPickerOwner = null)}
+    onconfirm={(areaId) => handleAreaPicked(pickerOwner, areaId)}
+  />
 {/if}
 
 <style>
@@ -381,15 +389,33 @@
     padding: 4px;
   }
 
-  .owner-item {
+  .owner-row {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    gap: 12px;
+    align-items: stretch;
+    gap: 6px;
     width: 100%;
-    padding: 10px 14px;
+    padding: 4px;
     background: var(--surface-subtle);
     border: 1px solid var(--border-1);
+    border-radius: var(--radius-sm);
+    transition: border-color var(--transition-fast), background var(--transition-fast);
+  }
+
+  .owner-row.selected {
+    background: var(--surface-strong);
+    border-color: var(--color-accent);
+  }
+
+  .owner-select {
+    flex: 1;
+    min-width: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    padding: 6px 6px 6px 12px;
+    background: transparent;
+    border: none;
     border-radius: var(--radius-sm);
     color: var(--text-primary);
     font-family: var(--font-body);
@@ -398,9 +424,10 @@
     cursor: pointer;
   }
 
-  .owner-item.selected {
-    background: var(--surface-strong);
-    border-color: var(--color-accent);
+  .owner-select:focus-visible,
+  .area-badge-btn:focus-visible {
+    outline: 2px solid var(--color-accent);
+    outline-offset: 2px;
   }
 
   .owner-name {
@@ -411,12 +438,44 @@
     white-space: nowrap;
   }
 
-  .owner-meta {
+  .area-badge-btn {
+    flex-shrink: 0;
+    align-self: center;
     display: flex;
     align-items: center;
-    gap: 8px;
-    flex-wrap: wrap;
+    gap: 5px;
+    padding: 5px 10px;
+    border-radius: 999px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid var(--color-accent-border);
+    color: var(--color-accent);
+    font-family: var(--font-body);
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    white-space: nowrap;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    transition: all var(--transition-fast);
+  }
+
+  .area-badge-btn:hover {
+    background: rgba(255, 255, 255, 0.1);
+    border-color: var(--color-accent);
+  }
+
+  .new-owner-area {
+    display: flex;
+    align-items: center;
     justify-content: flex-end;
+    gap: 8px;
+    padding: 2px 4px;
+  }
+
+  .new-owner-label {
+    font-size: 0.75rem;
+    color: var(--text-muted);
   }
 
   .helper-text {
@@ -444,9 +503,10 @@
       padding: 16px;
     }
 
-    .owner-meta {
-      flex-wrap: wrap;
-      justify-content: flex-end;
+    .owner-select {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 6px;
     }
 
     .action-buttons {
