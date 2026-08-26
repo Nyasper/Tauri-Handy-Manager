@@ -6,6 +6,8 @@ El formato se basa en [Keep a Changelog](https://keepachangelog.com/es/1.1.0/), 
 
 ## [Unreleased]
 
+## [3.1.0] - 2026-08-26
+
 ### Agregado
 
 - La etiqueta del área en las tarjetas de la grid es clickeable y permite cambiar el área del funcionario al instante.
